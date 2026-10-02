@@ -1,0 +1,810 @@
+/* The Detect screen (MetadataDetect.tsx), in the Clamk Tools identity: flat cards on the page, hairlines, groups
+   introduced by a mono label. Colours are the theme's tokens only. */
+
+/* The colour of a labeled field, in the order the fields are made: the three markers, then amber, violet and grey.
+   --g is the ink (dots, edges), --g-text the ink that is safe for small text, --g-tint the pale surface. The field's
+   name is always written beside its colour. */
+.g0 { --g: var(--blue-ink); --g-text: var(--blue-text); --g-tint: var(--blue-tint); }
+.g1 { --g: var(--green-ink); --g-text: var(--green-text); --g-tint: var(--green-tint); }
+.g2 { --g: var(--coral-ink); --g-text: var(--coral-text); --g-tint: var(--coral-tint); }
+.g3 { --g: var(--amber-ink); --g-text: var(--amber-text); --g-tint: var(--amber-tint); }
+.g4 { --g: var(--violet-ink); --g-text: var(--violet-text); --g-tint: var(--violet-tint); }
+.g5 { --g: var(--grey-ink); --g-text: var(--grey-text); --g-tint: var(--grey-tint); }
+
+/* ---------- the screen ---------- */
+
+.dt {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  /* an "i" bubble that is not shown must not widen the page; the margin leaves room for the focus rings at the edge */
+  margin-inline: -6px;
+  padding: 8px 6px 0;
+  overflow-x: clip;
+  outline: none;
+}
+
+.dt-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dt-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dt-head h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+/* shown beside the title when an answer takes a while (thousands of names) */
+.dt-working {
+  margin-left: auto;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.dt-loading {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* two zones: what you work on (left) and what that produced (right, the labels) */
+.dt-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 26px;
+}
+
+@media (max-width: 860px) {
+  .dt-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dt-work {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+/* a group: its label, then what it holds */
+.dt-group {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dt .section-label {
+  min-height: 28px;
+}
+
+.dt-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dt-sub {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.dt-warn {
+  color: var(--amber-text);
+}
+
+/* ---------- the "i" bubbles ---------- */
+
+/* the explanation pops out under the "i" (.field-pop) on hover or keyboard focus */
+.dt-info {
+  position: relative;
+  display: flex;
+}
+
+.dt-info button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: help;
+}
+
+.dt-info button::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+
+.field-pop {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  width: max-content;
+  max-width: min(380px, 80vw);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  color: var(--text);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 120ms ease,
+    visibility 0s linear 120ms;
+}
+
+.field-pop.wide {
+  max-width: min(500px, 88vw);
+}
+
+.dt-opt-row .field-pop {
+  max-width: min(440px, 80vw);
+}
+
+.dt-info:hover .field-pop,
+.dt-info:focus-within .field-pop {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* ---------- 1 · the sample name ---------- */
+
+.dt-nav {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--muted);
+  font: 600 0.7rem/1 var(--font-mono);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dt-nav button {
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+}
+
+.dt-nav span {
+  padding: 0 4px;
+}
+
+/* the name, the parts to pick and the label choices: one card, split by hairlines */
+.dt-stage {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+/* the sample name: the largest thing on the screen, one selectable character at a time */
+.dt-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  padding: 30px 18px 26px;
+  font-family: var(--font-mono);
+  font-size: 1.375rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: pre;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  cursor: text;
+}
+
+.dt-name.busy {
+  cursor: progress;
+}
+
+.dt-name [data-i] {
+  border-radius: 2px;
+}
+
+.dt-name [data-i]:hover {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.dt-name [data-i].sel {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* a long name wraps between its characters instead of running out of the page */
+.dt-plain,
+.dt-chip > span:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.dt-plain {
+  padding: 4px 0;
+  color: var(--muted);
+}
+
+/* a labeled part: its field's tint and ink, the label under its text, a cross at its top-right corner */
+.dt-chip {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-inline: 4px;
+  padding: 3px 8px 4px;
+  border: 1px solid color-mix(in srgb, var(--g) 45%, var(--g-tint));
+  border-radius: var(--radius-control);
+  background: var(--g-tint);
+  color: var(--g-text);
+  font-weight: 600;
+}
+
+.dt-chip small {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+/* the cross: removes the label of a part of the name, or drops the selection */
+.dt-x {
+  position: absolute;
+  z-index: 1;
+  top: -9px;
+  right: -9px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-color: var(--x-edge, var(--border));
+  border-radius: 50%;
+  color: var(--x-ink, var(--muted));
+  line-height: 1;
+}
+
+.dt-x::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+
+.dt-x:hover:not(:disabled),
+.dt-x:active:not(:disabled) {
+  border-color: var(--coral-ink);
+  background: var(--coral-tint);
+  color: var(--coral-text);
+}
+
+.dt-chip .dt-x {
+  --x-edge: var(--g);
+  --x-ink: var(--g-text);
+}
+
+.dt-selend {
+  position: relative;
+}
+
+.dt-selend .dt-x {
+  --x-edge: var(--accent);
+  --x-ink: var(--accent);
+}
+
+/* a selection that sits on a labeled part: its cross moves inside the part's edge, clear of the part's own cross */
+.dt-chip .dt-selend .dt-x {
+  right: 8px;
+}
+
+.dt-parts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.dt-parts button,
+.dt-unmatched button {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* the choices for the selected part: right under the name, always there (waiting, disabled, until a part is selected) */
+.dt-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.dt-picker-head {
+  min-height: 20px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.dt-picker b {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dt-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 92px), 1fr));
+  gap: 6px;
+}
+
+/* a label already on another part of the name: still a choice (it moves to the selection), marked as in use */
+.dt-presets button.used:not(:disabled) {
+  border-style: dashed;
+  border-color: var(--rail);
+  color: var(--muted);
+}
+
+.dt-presets button.used:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.dt-other {
+  display: flex;
+  gap: 6px;
+}
+
+.dt-other input {
+  flex: 0 1 220px;
+  min-width: 0;
+}
+
+/* ---------- 2 · the pattern ---------- */
+
+/* the pattern wraps rather than scrolling */
+.dt-regex {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font: 500 0.9rem/2 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.dt-regex .grp {
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--g-tint);
+  color: var(--g-text);
+  font-weight: 600;
+}
+
+.dt-empty {
+  font-family: var(--font-sans);
+  color: var(--muted);
+}
+
+.dt-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* an option of the pattern with its "i" bubble beside it */
+.dt-opt-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dt-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+/* ---------- the labels: one card per labeled field ---------- */
+
+.dt-labels {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dt-labels .section-label {
+  margin-bottom: 2px;
+}
+
+.dt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.dt-field-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* the field's name: the same box as its part of the sample name (.dt-chip), so the two are matched at a glance */
+.dt-field .dt-name-input {
+  flex: 1;
+  min-width: 0;
+  border-color: color-mix(in srgb, var(--g) 45%, var(--g-tint));
+  background: var(--g-tint);
+  color: var(--g-text);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.dt-field .dt-name-input:hover:not(:disabled) {
+  border-color: var(--g);
+}
+
+.dt-field .dt-name-input:focus-visible {
+  border-color: var(--accent);
+}
+
+/* what the field selects in the sample name */
+.dt-text {
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: 600 0.75rem/1.5 var(--font-mono);
+  white-space: pre;
+}
+
+button.dt-remove {
+  flex: none;
+  width: 28px;
+  padding: 0;
+  margin-right: -4px;
+}
+
+button.dt-remove:hover:not(:disabled) {
+  background: var(--coral-tint);
+  color: var(--coral-text);
+}
+
+.dt-field select {
+  width: 100%;
+  font-size: 0.8125rem;
+}
+
+.dt-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.dt-field-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.dt-field-sum code {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.dt-slot {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* ---------- 3 · what the pattern reads ---------- */
+
+.dt-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.is-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.is-legend .ok {
+  font-weight: 600;
+  color: var(--green-text);
+}
+
+.dt-unmatched {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.is-table-wrap {
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.is-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.is-table th {
+  position: sticky;
+  top: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font: 600 0.7rem/1 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* "Name" is the page's own word; the others are the fields' names, written as they are in the pattern */
+.is-table th:first-child {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.is-table th .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--g);
+}
+
+.is-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.is-table tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ---------- inside the "i" bubbles ---------- */
+
+.dt-eg-title,
+.dt-ref-title {
+  display: block;
+  font: 600 0.7rem/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* the worked example: the name used (the labeled part marked), then one line per setting */
+.dt-eg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+}
+
+.dt-eg-name {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.dt-eg-name mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: var(--blue-tint);
+  color: var(--blue-text);
+  font-weight: 600;
+}
+
+.dt-eg-note {
+  color: var(--muted);
+}
+
+.dt-eg-case {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.dt-eg-case::before {
+  content: "•";
+  color: var(--muted);
+}
+
+.dt-eg-state {
+  flex: none;
+  min-width: 62px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dt-eg-state.on {
+  color: var(--green-text);
+}
+
+.dt-eg-rest {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dt-eg-rest code {
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.dt-eg-rest span {
+  color: var(--muted);
+}
+
+/* the reference in the "i" next to Pattern */
+.dt-ref-title {
+  margin-bottom: 10px;
+}
+
+.dt-ref {
+  display: flex;
+  flex-direction: column;
+}
+
+.dt-ref-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 124px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 5px 0;
+  border-top: 1px solid var(--border);
+}
+
+.dt-ref-row code {
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.dt-ref-foot {
+  display: block;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.dt-ref-foot code {
+  font-size: 0.75rem;
+  color: var(--text);
+}
+
+/* ---------- narrow screens ---------- */
+
+@media (max-width: 800px) {
+  /* a bubble pops out across its row instead of running off the right edge */
+  .dt-head,
+  .dt .section-label {
+    position: relative;
+  }
+
+  .dt-info {
+    position: static;
+  }
+
+  .dt-info .field-pop {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .dt-name {
+    padding: 26px 12px 22px;
+    font-size: 1.0625rem;
+  }
+
+  .dt-ref-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+/* a touch screen: text large enough that the browser does not zoom in on it */
+@media (pointer: coarse) {
+  .dt input:not([type="checkbox"]),
+  .dt select {
+    font-size: 16px;
+  }
+}

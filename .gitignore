@@ -1,0 +1,24 @@
+# Reference copies from HC-Flow, and the working notes: kept on the author's machine, never published
+from-hcflow/
+from-*/
+CLAUDE.md
+PLAN.md
+
+node_modules/
+dist/
+test-results/
+playwright-report/
+
+__pycache__/
+.pytest_cache/
+*.pyc
+
+.vscode/
+.claude/
+*.local
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key

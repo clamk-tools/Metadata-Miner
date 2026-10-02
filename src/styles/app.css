@@ -1,0 +1,381 @@
+/* The page around Detect: the family's frame (rail, header, footer), the names step, the notices, Python's state.
+   Colours are the theme's tokens only. */
+
+/* ---------- frame ---------- */
+
+.frame {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.rail {
+  flex: none;
+  height: var(--rail-height);
+  background: linear-gradient(180deg, var(--rail), var(--border));
+}
+
+.wrap {
+  width: 100%;
+  max-width: var(--container);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 18px;
+}
+
+.brand {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+.brand a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+}
+
+.brand a:hover {
+  text-decoration: none;
+}
+
+.brand a::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* the family's switch: a pill track, a knob that slides, the sun or the moon in it */
+.theme-switch {
+  flex: none;
+  width: 50px;
+  height: 27px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  background: var(--switch-track);
+}
+
+.theme-switch:active:not(:disabled) {
+  background: var(--switch-track);
+}
+
+.theme-switch::after {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+}
+
+.theme-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  transition: transform 180ms ease;
+}
+
+.theme-switch[aria-checked="true"] .theme-knob {
+  transform: translateX(23px);
+}
+
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 44px;
+}
+
+.foot p {
+  margin: 0;
+  padding: 18px 0 28px;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ---------- the names step ---------- */
+
+.in {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.in-intro {
+  margin-bottom: 14px; /* with the gap: 26px to the group under it */
+}
+
+.in-intro h2 {
+  margin: 0 0 10px;
+  max-width: 26ch;
+  text-wrap: balance;
+  font-size: clamp(1.7rem, 3.8vw, 2.3rem);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+}
+
+/* the marker underline: one hand-drawn stroke under one word of the headline */
+.marked {
+  position: relative;
+  white-space: nowrap;
+}
+
+.marked svg {
+  position: absolute;
+  left: 0;
+  bottom: -0.16em;
+  width: 100%;
+  height: 0.3em;
+  overflow: visible;
+  color: var(--accent);
+}
+
+.in-intro p {
+  margin: 0;
+  max-width: 42ch;
+  text-wrap: balance;
+  color: var(--muted);
+}
+
+.in-ways {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 20px;
+}
+
+@media (max-width: 760px) {
+  .in-ways {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+}
+
+.in-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 190px;
+  padding: 18px;
+  border: 1px dashed var(--rail);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--muted);
+  text-align: center;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.page.dragging .in-drop {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+
+.in-drop p {
+  margin: 0;
+}
+
+.in-drop-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.in-drop-hint {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.in-drop button {
+  margin-top: 10px;
+}
+
+.in-paste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.in-paste label {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.in-paste textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+@media (pointer: coarse) {
+  .in-paste textarea {
+    font-size: 16px; /* smaller, a phone zooms in on it */
+  }
+}
+
+.in-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.in-privacy {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* ---------- notices: a pale tint, a hairline in the state's ink, the text in its text-safe ink ---------- */
+
+.notice {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.notice.info {
+  border-color: var(--blue-ink);
+  background: var(--blue-tint);
+  color: var(--blue-text);
+}
+
+.notice.warn {
+  border-color: var(--amber-ink);
+  background: var(--amber-tint);
+  color: var(--amber-text);
+}
+
+.notice.bad {
+  border-color: var(--coral-ink);
+  background: var(--coral-tint);
+  color: var(--coral-text);
+}
+
+/* ---------- Python: loading, failed ---------- */
+
+.engine {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.engine::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.engine.loading::before {
+  animation: pulse 1.2s ease-in-out infinite alternate;
+}
+
+.engine.failed {
+  color: var(--coral-text);
+}
+
+.engine.failed::before {
+  background: var(--coral-ink);
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.engine-failed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--coral-ink);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.engine-failed h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.engine-failed p {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.engine-failed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.engine-failed .engine-failed-detail {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--coral-text);
+  overflow-wrap: anywhere;
+}

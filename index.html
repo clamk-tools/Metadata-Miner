@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MetadataMiner</title>
+    <meta name="description" content="Write the metadata regex for your image file names by labeling one of them. Runs in your browser: nothing is uploaded." />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <!-- The stored theme, applied before the first paint (public/theme.js). Not a module, so the page waits for it;
+         not written here, because the built page's Content-Security-Policy allows no inline script (vite.config.ts). -->
+    <script src="/theme.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>MetadataMiner needs JavaScript: it works out the pattern in your browser.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
