@@ -10,7 +10,12 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
-- (nothing)
+### 2026-10-06 · A way back to the other tools
+
+- **Seen:** the header has a quiet "← All tools" link to the hub, next to the theme switch, as in the other Clamk
+  tools. The footer keeps only the *Source* link; its "One of the Clamk Tools" line repeated the new link.
+- **Inside:** `App.tsx`; `e2e/detect.spec.ts` checks the link.
+- **Decided:** every Clamk tool has the "← All tools" link in its header (the visual identity brief, section 5).
 
 ## 2026-10-02 · No third party, and the browser holds the page to it
 

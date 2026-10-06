@@ -249,6 +249,11 @@ test("the name in the header goes back to the names", async ({ page }) => {
   await expect(page.getByLabel("Or paste the names")).toHaveValue(/A01_s1\.tif/);
 });
 
+test("the header links back to all the Clamk tools", async ({ page }) => {
+  await page.goto("./");
+  await expect(page.getByRole("banner").getByRole("link", { name: "← All tools" })).toHaveAttribute("href", "https://clamk-tools.github.io/");
+});
+
 test("a label already in use can be chosen for another part: it moves there", async ({ page }) => {
   await paste(page, FOUR);
   await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`); // Well is on A01, Site on s1

@@ -65,7 +65,7 @@ served from it. No CDN, no analytics, no other third party. Two things hold that
 
 - The page carries a Content-Security-Policy: the browser refuses the requests a script makes to another host
   (to load something from it or to send something to it), from the page and from the Python worker. A policy
-  does not stop the page from going to another address: the two links in the footer, or a script written to send
+  does not stop the page from going to another address: the "← All tools" link in the header and the *Source* link in the footer, or a script written to send
   the page elsewhere. It guards against a request added by mistake or by a dependency, not against code written
   to get round it.
 - The end-to-end tests fail if a session asks anything of another host, or if the browser lets such a request

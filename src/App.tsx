@@ -107,6 +107,9 @@ export function App() {
           </a>
         </h1>
         <div className="top-actions">
+          <a className="quiet" href="https://clamk-tools.github.io/">
+            ← All tools
+          </a>
           <ThemeSwitch />
         </div>
       </header>
@@ -177,11 +180,6 @@ export function App() {
 
       <footer className="wrap foot">
         <p>
-          One of the{" "}
-          <a className="quiet" href="https://clamk-tools.github.io/">
-            Clamk Tools
-          </a>{" "}
-          ·{" "}
           <a className="quiet" href="https://github.com/clamk-tools/Metadata-Miner">
             Source
           </a>
