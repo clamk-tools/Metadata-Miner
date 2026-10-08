@@ -10,6 +10,13 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-08 · No line under the paste box
+
+- **Seen:** the line "Only the names are read. No file is opened, and nothing is uploaded." under the paste box is
+  gone. The intro above still says "Only file names are read."
+- **Inside:** `NamesInput.tsx`, its style in `app.css`, and the check in `e2e/detect.spec.ts`.
+- **Decided:** by the owner's choice. The README's Privacy section keeps the full statement.
+
 ### 2026-10-08 · Names are pasted, and only pasted
 
 - **Seen:** the names step has only the paste box. The drop zone, the *Choose files…* button and dropping files or

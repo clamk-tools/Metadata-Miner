@@ -46,8 +46,6 @@ export function NamesInput({ text, onText, onPaste }: Props) {
           </button>
         </div>
       </div>
-
-      <p className="in-privacy">Only the names are read. No file is opened, and nothing is uploaded.</p>
     </section>
   );
 }

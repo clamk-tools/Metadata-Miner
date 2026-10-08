@@ -64,7 +64,7 @@ test("the page opens on the names step, with nothing else to get through", async
   await expect(page.getByLabel("Paste the names, one per line")).toBeVisible();
   await expect(page.getByRole("button", { name: "Choose files…" })).toHaveCount(0); // pasting is the only way in
   await expect(page.getByRole("button", { name: "Use these names" })).toBeDisabled(); // until some names are pasted
-  await expect(page.getByText("Only the names are read. No file is opened, and nothing is uploaded.")).toBeVisible();
+  await expect(page.getByText("No file is opened, and nothing is uploaded.")).toHaveCount(0); // the line under the paste box is gone
   await expect(page.getByRole("heading", { name: "Detect the pattern" })).toHaveCount(0);
 });
 
