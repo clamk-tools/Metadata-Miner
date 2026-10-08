@@ -194,6 +194,20 @@ test("a single name says why nothing is proposed", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Copy this pattern" })).toBeDisabled();
 });
 
+test("a file dropped on the page is ignored: the tool stays open on the names step", async ({ page }) => {
+  const kept = await page.evaluate(() => {
+    const data = new DataTransfer();
+    data.items.add(new File(["not read"], "A01_s1.tif"));
+    const drop = new DragEvent("drop", { dataTransfer: data, bubbles: true, cancelable: true });
+    window.dispatchEvent(drop);
+    return drop.defaultPrevented; // not prevented: the browser would open the file in place of the page
+  });
+
+  expect(kept).toBe(true);
+  await expect(page.getByLabel("Paste the names, one per line")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Detect the pattern" })).toHaveCount(0);
+});
+
 const DARK = "rgb(21, 24, 26)";
 const LIGHT = "rgb(251, 252, 252)";
 

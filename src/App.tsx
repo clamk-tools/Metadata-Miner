@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { DetectClient } from "./detectClient";
 import { MetadataDetect } from "./MetadataDetect";
@@ -31,6 +31,22 @@ export function App() {
       setRun((n) => n + 1);
     }
   };
+  // A file dropped on the page is ignored. Without this, the browser would open it in place of the tool. Dragged text
+  // (into the paste box) is not a file, so it still works.
+  useEffect(() => {
+    const ignore = (e: DragEvent) => {
+      if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "none";
+    };
+    window.addEventListener("dragover", ignore);
+    window.addEventListener("drop", ignore);
+    return () => {
+      window.removeEventListener("dragover", ignore);
+      window.removeEventListener("drop", ignore);
+    };
+  }, []);
+
   const retry = () => {
     client.restart();
     setRun((n) => n + 1);

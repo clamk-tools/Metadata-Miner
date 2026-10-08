@@ -35,7 +35,7 @@ answer and never builds a pattern itself.
 | `src/detect.worker.ts` | Loads Pyodide and the Python files; answers requests one at a time, in order |
 | `src/detectClient.ts` | The page's side of the worker: starts it (from a blob, section 9), engine status, `setNames`, `detect`, `restart` |
 | `src/detect-types.ts` | The contract: the request, the answer, the worker messages |
-| `src/App.tsx` | The frame (rail, header, footer), the names step or the Detect screen, the notices |
+| `src/App.tsx` | The frame (rail, header, footer), the names step or the Detect screen, the notices, the guard that ignores a dropped file |
 | `src/NamesInput.tsx` | The names step: the paste box |
 | `src/names.ts` | Names from pasted text; the image filter; the same-stem warning |
 | `src/MetadataDetect.tsx` | The Detect screen and its parts (sample name, label picker, field cards, matches, "i" bubbles) |
@@ -210,7 +210,8 @@ Each character of the sample is a `<span data-i="…">`. A click selects the let
 ### 6.3 Names intake (`names.ts`)
 
 Only `.tif`, `.tiff`, `.png`, `.jpg`, `.jpeg` are kept, as HC-Flow's folder listing does. The names are
-pasted, one per line; there is no drop or file picker (removed 2026-10-08, see the change log). Pasted lines may
+pasted, one per line; there is no drop or file picker (removed 2026-10-08, see the change log). `App.tsx` ignores a
+file dropped on the page, so the browser does not open it in place of the tool. Pasted lines may
 be full paths, quoted or not: the file name is kept. Two names with the same stem give a warning
 because HC-Flow refuses that folder.
 
