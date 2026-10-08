@@ -20,8 +20,8 @@ The tool is one of the [Clamk Tools](https://clamk-tools.github.io/). It runs en
 
 The page opens on a single step: the names. Then it shows the Detect screen on them.
 
-1. **Give your names.** Drop image files or a folder anywhere on the page, choose files, or paste names (one per
-   line; full paths work, the file name is kept).
+1. **Paste your names**, one per line (full paths work, the file name is kept). In Windows Explorer, select the
+   files and use *Copy as path*, then paste here.
 2. **Check the labels.** The tool proposes labels from what varies across the names. To change them, drag across
    the sample name, click a part of it, or use the **Or pick a part** buttons, then choose what the part is.
 3. **Check what it reads.** The table shows the values read from the first names. Names the pattern does not match
@@ -45,7 +45,7 @@ to compare, so it proposes nothing and keeps a word such as `DAPI` as fixed text
 
 - Only names ending in `.tif`, `.tiff`, `.png`, `.jpg` or `.jpeg` are used, as in HC-Flow. The page says how many
   others it ignored.
-- A dropped folder is read with its subfolders. A name found twice is kept once.
+- A name found twice is kept once.
 - Two names that differ only by their extension or by case (`a.tif`, `a.png`) give a warning: the pattern is fine,
   but HC-Flow refuses a folder that holds both.
 
@@ -56,9 +56,8 @@ browser, and it is the same one on the hub and on every Clamk tool.
 
 ## Privacy
 
-Only file names are read. No file is opened, and nothing is uploaded: the names stay in the page. A browser gives a
-page the name of a dropped file, never the folder it sits in on your disk; a pasted full path is cut down to its
-file name.
+Only file names are read. No file is opened, and nothing is uploaded: the names stay in the page. A pasted full
+path is cut down to its file name.
 
 Every network request goes to the site itself: the page, its fonts and the Python runtime (see below) are all
 served from it. No CDN, no analytics, no other third party. Two things hold that in place:
@@ -93,7 +92,6 @@ serves (it is the code in this repository, built by its CI).
 - **An existing pattern cannot be loaded** to edit it: the pattern is always written from labels.
 - **Characters outside the Basic Multilingual Plane** (an emoji in a file name) shift the selection by one
   character. Same limit as HC-Flow.
-- **Choose files** picks files, not a folder: drop the folder instead.
 - **Browsers**: tested automatically in Chromium, Firefox and WebKit. Safari itself has not been tried on a Mac or
   an iPhone; WebKit is the stand-in.
 
@@ -115,7 +113,7 @@ runtime comes from the `pyodide` npm package and is published with the site, in 
 | `src/detect.worker.ts` | Loads Pyodide and the Python files, answers the page's requests in order |
 | `src/detectClient.ts` | The page's side of the worker: starts it, status, `setNames`, `detect`, restart |
 | `vite.config.ts` | The build: puts the Pyodide runtime in `pyodide/`, writes the page's Content-Security-Policy |
-| `src/names.ts` | Names from a drop, a file choice or pasted text; the image filter |
+| `src/names.ts` | Names from pasted text; the image filter |
 | `src/MetadataDetect.tsx` | The Detect screen (HC-Flow's dialog, as a page section) |
 | `src/App.tsx`, `src/NamesInput.tsx` | The page around it: the frame (header, footer), the names step and the notices |
 | `src/theme.ts`, `src/ThemeSwitch.tsx` | Light or dark: the system setting, the switch, the stored choice |

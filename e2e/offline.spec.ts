@@ -10,7 +10,7 @@ test("when Python cannot be downloaded the page says so, and Try again recovers"
 
   await expect(page.getByTestId("engine")).toContainText("Python could not be loaded"); // said on the names step already
 
-  await page.getByLabel("Or paste the names").fill(NAMES); // names are taken all the same
+  await page.getByLabel("Paste the names").fill(NAMES); // names are taken all the same
   await page.getByRole("button", { name: "Use these names" }).click();
   await expect(page.getByRole("heading", { name: "Python could not be loaded" })).toBeVisible();
 
@@ -46,7 +46,7 @@ test("when the browser refuses to run Python the page says so, and does not offe
   await expect(page.getByTestId("engine")).toContainText("This browser cannot run Python");
   await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0);
 
-  await page.getByLabel("Or paste the names").fill(NAMES);
+  await page.getByLabel("Paste the names").fill(NAMES);
   await page.getByRole("button", { name: "Use these names" }).click();
   await expect(page.getByRole("heading", { name: "This browser cannot run Python" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0);

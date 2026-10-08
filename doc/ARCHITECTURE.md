@@ -35,9 +35,9 @@ answer and never builds a pattern itself.
 | `src/detect.worker.ts` | Loads Pyodide and the Python files; answers requests one at a time, in order |
 | `src/detectClient.ts` | The page's side of the worker: starts it (from a blob, section 9), engine status, `setNames`, `detect`, `restart` |
 | `src/detect-types.ts` | The contract: the request, the answer, the worker messages |
-| `src/App.tsx` | The frame (rail, header, footer), the names step or the Detect screen, the notices, the page-wide drop |
-| `src/NamesInput.tsx` | The names step: drop zone, file picker, paste box |
-| `src/names.ts` | Names from a drop, a file choice or pasted text; the image filter; the same-stem warning |
+| `src/App.tsx` | The frame (rail, header, footer), the names step or the Detect screen, the notices |
+| `src/NamesInput.tsx` | The names step: the paste box |
+| `src/names.ts` | Names from pasted text; the image filter; the same-stem warning |
 | `src/MetadataDetect.tsx` | The Detect screen and its parts (sample name, label picker, field cards, matches, "i" bubbles) |
 | `src/selection.ts` | A click or a drag on the sample name, turned into the stretch to label |
 | `src/clipboard.ts` | Copy, with a fallback when the browser refuses |
@@ -54,7 +54,7 @@ answer and never builds a pattern itself.
 1. **Start.** `App.tsx` creates one `DetectClient` when the module loads. Its worker starts loading Pyodide
    (from `pyodide/<version>/`, on the site itself) at once, so Python is usually ready by the time the names are. The engine status is `loading`, `ready` or
    `failed`, read with `useSyncExternalStore`.
-2. **Names.** A drop anywhere on the page, a file choice or the paste box gives raw names. `intake()` keeps the
+2. **Names.** The paste box gives raw names. `intake()` keeps the
    image names (sorted, each once) and counts the rest. `App.load` sends the kept names to the worker
    (`client.setNames`) in the event handler, so they are there before the first question. It then bumps `run`,
    the React `key` of the Detect screen: each set of names gets a fresh screen.
@@ -192,7 +192,7 @@ loops over every name once per field per style.
 |---|---|---|
 | `App` | `result` | The last intake (`names`, `ignored`, `sameStem`, ...) or null. Detect shows when it has names |
 | `App` | `run` | Key of the Detect screen: bumped for each new set of names and on *Try again* |
-| `App` | `text`, `reading`, `dragging`, `problem` | Paste box, a folder being walked, a drag over the page, a failed drop |
+| `App` | `text` | The paste box |
 | `MetadataDetect` | `answer` | The last answer from Python: everything drawn comes from it |
 | `MetadataDetect` | `options` | `generalize` and `anchor`, sent with every request |
 | `MetadataDetect` | `pending` | The selection waiting for a label (`{ start, end }`) |
@@ -209,9 +209,9 @@ Each character of the sample is a `<span data-i="…">`. A click selects the let
 
 ### 6.3 Names intake (`names.ts`)
 
-Only `.tif`, `.tiff`, `.png`, `.jpg`, `.jpeg` are kept, as HC-Flow's folder listing does. A dropped folder is
-walked with its subfolders through the browser's entry API, which must be read inside the drop event. Pasted
-lines may be full paths, quoted or not: the file name is kept. Two names with the same stem give a warning
+Only `.tif`, `.tiff`, `.png`, `.jpg`, `.jpeg` are kept, as HC-Flow's folder listing does. The names are
+pasted, one per line; there is no drop or file picker (removed 2026-10-08, see the change log). Pasted lines may
+be full paths, quoted or not: the file name is kept. Two names with the same stem give a warning
 because HC-Flow refuses that folder.
 
 ### 6.4 Theme

@@ -30,7 +30,8 @@ async function watchRefusals(page: Page): Promise<() => Promise<string[][]>> {
 
 // The names are given and Python has answered: its worker is there and ready.
 async function giveNames(page: Page) {
-  await page.getByLabel("Choose image files").setInputFiles(NAMES.map((name) => ({ name, mimeType: "image/tiff", buffer: Buffer.from("not read") })));
+  await page.getByLabel("Paste the names").fill(NAMES.join("\n"));
+  await page.getByRole("button", { name: "Use these names" }).click();
   await expect(page.getByTestId("matched")).toHaveText("Matched 4 of 4 names");
 }
 
