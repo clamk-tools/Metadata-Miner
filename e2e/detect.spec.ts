@@ -55,15 +55,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function paste(page: Page, names: string[]) {
-  await page.getByLabel("Or paste the names").fill(names.join("\n"));
+  await page.getByLabel("Paste the names").fill(names.join("\n"));
   await page.getByRole("button", { name: "Use these names" }).click();
 }
 
 test("the page opens on the names step, with nothing else to get through", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "MetadataMiner" })).toBeVisible();
-  await expect(page.getByText("Drop image files or a folder here")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Choose files…" })).toBeVisible();
-  await expect(page.getByLabel("Or paste the names, one per line")).toBeVisible();
+  await expect(page.getByLabel("Paste the names, one per line")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Choose files…" })).toHaveCount(0); // pasting is the only way in
   await expect(page.getByRole("button", { name: "Use these names" })).toBeDisabled(); // until some names are pasted
   await expect(page.getByText("Only the names are read. No file is opened, and nothing is uploaded.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Detect the pattern" })).toHaveCount(0);
@@ -183,7 +182,7 @@ test("other files are ignored and counted, and the cross goes back to the names"
   await expect(page.getByTestId("ignored")).toContainText("2 other names ignored");
 
   await page.getByRole("button", { name: "Close" }).click();
-  await expect(page.getByLabel("Or paste the names")).toHaveValue(/notes\.txt/); // what was pasted is still there
+  await expect(page.getByLabel("Paste the names")).toHaveValue(/notes\.txt/); // what was pasted is still there
 });
 
 test("a single name says why nothing is proposed", async ({ page }) => {
@@ -195,23 +194,18 @@ test("a single name says why nothing is proposed", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Copy this pattern" })).toBeDisabled();
 });
 
-test("dropped files give their names", async ({ page }) => {
-  await page.evaluate((names) => {
+test("a file dropped on the page is ignored: the tool stays open on the names step", async ({ page }) => {
+  const kept = await page.evaluate(() => {
     const data = new DataTransfer();
-    for (const name of [...names, "layout.csv"]) data.items.add(new File(["not read"], name));
-    window.dispatchEvent(new DragEvent("drop", { dataTransfer: data, bubbles: true, cancelable: true }));
-  }, FOUR);
+    data.items.add(new File(["not read"], "A01_s1.tif"));
+    const drop = new DragEvent("drop", { dataTransfer: data, bubbles: true, cancelable: true });
+    window.dispatchEvent(drop);
+    return drop.defaultPrevented; // not prevented: the browser would open the file in place of the page
+  });
 
-  await expect(page.getByText("1 of 4")).toBeVisible();
-  await expect(page.getByTestId("ignored")).toContainText("1 other name ignored");
-  await expect(matched(page)).toHaveText("Matched 4 of 4 names");
-});
-
-test("chosen files give their names", async ({ page }) => {
-  await page.getByLabel("Choose image files").setInputFiles(FOUR.map((name) => ({ name, mimeType: "image/tiff", buffer: Buffer.from("not read") })));
-
-  await expect(page.getByText("1 of 4")).toBeVisible();
-  await expect(matched(page)).toHaveText("Matched 4 of 4 names");
+  expect(kept).toBe(true);
+  await expect(page.getByLabel("Paste the names, one per line")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Detect the pattern" })).toHaveCount(0);
 });
 
 const DARK = "rgb(21, 24, 26)";
@@ -246,7 +240,7 @@ test("the name in the header goes back to the names", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Detect the pattern" })).toBeVisible();
 
   await page.getByRole("link", { name: "MetadataMiner" }).click();
-  await expect(page.getByLabel("Or paste the names")).toHaveValue(/A01_s1\.tif/);
+  await expect(page.getByLabel("Paste the names")).toHaveValue(/A01_s1\.tif/);
 });
 
 test("the header links back to all the Clamk tools", async ({ page }) => {

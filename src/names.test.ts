@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { baseName, extension, intake, namesFromDrop, namesFromText, walk } from "./names";
+import { baseName, extension, intake, namesFromText } from "./names";
 
 describe("pasted text", () => {
   it("gives one name per line, whatever the line ending, without the blank lines", () => {
@@ -75,69 +75,5 @@ describe("intake", () => {
 
     expect(result.names).toHaveLength(5); // a warning, not a refusal: the pattern is still valid
     expect(result.sameStem).toEqual({ first: "a.png", second: "a.tif", count: 2 });
-  });
-});
-
-// The parts of the browser's dropped-entry API the walk uses.
-function file(name: string): FileSystemEntry {
-  return { name, isFile: true, isDirectory: false } as FileSystemEntry;
-}
-
-function folder(name: string, children: FileSystemEntry[], batch = 100): FileSystemEntry {
-  return {
-    name,
-    isFile: false,
-    isDirectory: true,
-    createReader() {
-      let at = 0;
-      return {
-        readEntries(done: (entries: FileSystemEntry[]) => void) {
-          const next = children.slice(at, at + batch);
-          at += batch;
-          setTimeout(() => done(next), 0);
-        },
-      };
-    },
-  } as unknown as FileSystemEntry;
-}
-
-describe("a dropped folder", () => {
-  it("is read past the first batch of entries", async () => {
-    const many = Array.from({ length: 250 }, (_, i) => file(`A01_s${i}.tif`));
-
-    const names = await walk([folder("plate", many)]);
-
-    expect(names).toHaveLength(250);
-  });
-
-  it("is walked through its subfolders, names only", async () => {
-    const tree = folder("screen", [
-      folder("plate1", [file("A01.tif"), file("A02.tif")]),
-      folder("plate2", [file("A01.tif"), folder("extra", [file("notes.txt")])]),
-      file("layout.csv"),
-    ]);
-
-    const names = await walk([tree, file("loose.tif")]);
-
-    expect(names.sort()).toEqual(["A01.tif", "A01.tif", "A02.tif", "layout.csv", "loose.tif", "notes.txt"]);
-  });
-
-  it("comes through a drop, with files dropped beside it", async () => {
-    const item = (entry: FileSystemEntry) => ({ kind: "file", webkitGetAsEntry: () => entry, getAsFile: () => null });
-    const data = {
-      items: [item(folder("plate", [file("A01.tif"), file("A02.tif")])), item(file("B01.tif")), { kind: "string" }],
-      files: [],
-      getData: () => "",
-    } as unknown as DataTransfer;
-
-    expect((await namesFromDrop(data)).sort()).toEqual(["A01.tif", "A02.tif", "B01.tif"]);
-  });
-
-  it("falls back to the plain file list, and to dropped text", async () => {
-    const files = { items: [], files: [{ name: "A01.tif" }, { name: "A02.tif" }], getData: () => "" } as unknown as DataTransfer;
-    const text = { items: [{ kind: "string" }], files: [], getData: () => "A01.tif\nA02.tif\n" } as unknown as DataTransfer;
-
-    expect(await namesFromDrop(files)).toEqual(["A01.tif", "A02.tif"]);
-    expect(await namesFromDrop(text)).toEqual(["A01.tif", "A02.tif"]);
   });
 });

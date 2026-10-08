@@ -10,6 +10,16 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-08 · Names are pasted, and only pasted
+
+- **Seen:** the names step has only the paste box. The drop zone, the *Choose files…* button and dropping files or
+  a folder anywhere on the page are gone. A file dropped on the page by habit is ignored, so the browser does not
+  open it in place of the tool.
+- **Inside:** `NamesInput.tsx`, `App.tsx` (the page-wide drop handling), `names.ts` (reading a drop and walking a
+  folder) and their styles and tests are removed; the end-to-end tests give the names by pasting. A small guard in `App.tsx`
+  stops a dropped file, with a test.
+- **Decided:** one way in, by the owner's choice: pasting covers every case (a full path is cut to its name).
+
 ### 2026-10-06 · A way back to the other tools
 
 - **Seen:** the header has a quiet "← All tools" link to the hub, next to the theme switch, as in the other Clamk

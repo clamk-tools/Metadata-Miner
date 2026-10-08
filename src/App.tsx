@@ -1,8 +1,8 @@
-import { useEffect, useEffectEvent, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { DetectClient } from "./detectClient";
 import { MetadataDetect } from "./MetadataDetect";
-import { IMAGE_EXTENSIONS, intake, namesFromDrop, namesFromFiles, namesFromText } from "./names";
+import { IMAGE_EXTENSIONS, intake, namesFromText } from "./names";
 import type { Intake } from "./names";
 import { NamesInput } from "./NamesInput";
 import { ThemeSwitch } from "./ThemeSwitch";
@@ -15,71 +15,35 @@ const client = new DetectClient();
 const count = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString("en")} ${n === 1 ? one : many}`;
 
 // The page opens on the names step (NamesInput); once names are given it shows Detect on them (MetadataDetect), and the
-// cross of Detect goes back to the names. Files can be dropped anywhere on the page, at any time: a drop replaces the
-// names. Around both: the frame every Clamk tool has (rail, header with the name and the theme switch, footer).
+// cross of Detect goes back to the names. Around both: the frame every Clamk tool has (rail, header with the name and the theme switch, footer).
 export function App() {
   const engine = useSyncExternalStore(client.subscribe, client.status);
   const [result, setResult] = useState<Intake | null>(null);
   const [run, setRun] = useState(0); // a new Detect screen for each set of names
   const [text, setText] = useState(""); // the paste box: kept when Detect is closed
-  const [reading, setReading] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
 
   // The names go to Python here, in the handler, so they are there before the Detect screen asks its first question.
   const load = (names: string[]) => {
     const next = intake(names);
     setResult(next);
-    setProblem(null);
     if (next.names.length) {
       client.setNames(next.names).catch(() => undefined); // a failure shows as the engine's state or on the first request
       setRun((n) => n + 1);
     }
   };
-  // Read inside the drop event itself: the browser only hands the dropped entries over while it is being handled.
-  const readDrop = useEffectEvent((data: DataTransfer) => {
-    setReading(true);
-    namesFromDrop(data)
-      .then(load)
-      .catch((e) => setProblem(`The dropped items could not be read (${e instanceof Error ? e.message : e}). Try pasting the names instead.`))
-      .finally(() => setReading(false));
-  });
-
-  // The whole page takes a drop. Without this, a file dropped beside the drop zone would be opened by the browser.
+  // A file dropped on the page is ignored. Without this, the browser would open it in place of the tool. Dragged text
+  // (into the paste box) is not a file, so it still works.
   useEffect(() => {
-    let depth = 0;
-    const files = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
-    const over = (e: DragEvent) => {
-      if (!files(e)) return;
+    const ignore = (e: DragEvent) => {
+      if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) return;
       e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "none";
     };
-    const enter = (e: DragEvent) => {
-      if (!files(e)) return;
-      depth += 1;
-      setDragging(true);
-    };
-    const leave = (e: DragEvent) => {
-      if (!files(e)) return;
-      depth = Math.max(0, depth - 1);
-      if (!depth) setDragging(false);
-    };
-    const drop = (e: DragEvent) => {
-      if (!files(e) || !e.dataTransfer) return;
-      e.preventDefault();
-      depth = 0;
-      setDragging(false);
-      readDrop(e.dataTransfer);
-    };
-    window.addEventListener("dragover", over);
-    window.addEventListener("dragenter", enter);
-    window.addEventListener("dragleave", leave);
-    window.addEventListener("drop", drop);
+    window.addEventListener("dragover", ignore);
+    window.addEventListener("drop", ignore);
     return () => {
-      window.removeEventListener("dragover", over);
-      window.removeEventListener("dragenter", enter);
-      window.removeEventListener("dragleave", leave);
-      window.removeEventListener("drop", drop);
+      window.removeEventListener("dragover", ignore);
+      window.removeEventListener("drop", ignore);
     };
   }, []);
 
@@ -114,18 +78,12 @@ export function App() {
         </div>
       </header>
 
-      <main className={`wrap page${dragging ? " dragging" : ""}`}>
+      <main className="wrap page">
         {!detecting && (
-          <NamesInput text={text} onText={setText} reading={reading} onFiles={(files) => load(namesFromFiles(files))} onPaste={() => load(namesFromText(text))} />
+          <NamesInput text={text} onText={setText} onPaste={() => load(namesFromText(text))} />
         )}
 
-        {problem && (
-          <p className="notice bad" role="alert">
-            {problem}
-          </p>
-        )}
-
-        {result && !detecting && !problem && (
+        {result && !detecting && (
           <p className="notice bad" role="alert">
             {result.given === 0
               ? "No file names were found in what you gave."
