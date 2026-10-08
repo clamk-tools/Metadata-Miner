@@ -453,8 +453,9 @@ These belong to the hub's job of listing tools:
   per-tool colour.
 
 Every tool links back to the hub: a quiet `muted` link reading "← All tools", to `https://clamk-tools.github.io/`,
-in the header just before the theme switch (the text turns `text` on hover). Do not repeat it in the footer. A
-native build (Android, iOS) leaves it out, because it would leave the app for the browser.
+in the header just before the theme switch (the text turns `text` on hover). On a screen too narrow for the header
+row, put it on its own line under the tool name rather than squeezing or hiding the controls. Do not repeat it in
+the footer. A native build (Android, iOS) leaves it out, because it would leave the app for the browser.
 
 ---
 
