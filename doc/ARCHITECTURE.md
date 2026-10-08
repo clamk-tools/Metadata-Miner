@@ -348,7 +348,7 @@ Each can be changed, but only on purpose: ask Clem first, then update this list.
   about the browser in it. What belongs to the page goes in `glue.py`.
 - **`base: "./"`** in Vite, so the site does not depend on the repository name.
 - **The look follows the Clamk Tools brief** (`doc/LLMfeed_VISUAL-IDENTITY.md`): tokens, flat hairlines, the rail,
-  the header with the name and the theme switch.
+  the header with the name, a quiet "← All tools" link to the hub and the theme switch.
 
 ## 12. HC-Flow
 

@@ -452,8 +452,10 @@ These belong to the hub's job of listing tools:
 - A tool's position or colour on the hub. Hub tile colours shift when tools are added, so they are not a stable
   per-tool colour.
 
-Linking back to the hub has not been decided. Keep whatever link the tool already has (the tool template has a
-"← All tools" link) and style it as a quiet `muted` link.
+Every tool links back to the hub: a quiet `muted` link reading "← All tools", to `https://clamk-tools.github.io/`,
+in the header just before the theme switch (the text turns `text` on hover). On a screen too narrow for the header
+row, put it on its own line under the tool name rather than squeezing or hiding the controls. Do not repeat it in
+the footer. A native build (Android, iOS) leaves it out, because it would leave the app for the browser.
 
 ---
 
