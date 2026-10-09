@@ -282,8 +282,11 @@ every Clamk tool share that key and the same origin, so the choice holds across 
 - `PLATE_PATTERN` in `e2e/detect.spec.ts` is the same string as the Python test asserts for the same plate of
   names. The browser and plain Python are held to one answer.
 - Every end-to-end test fails on an uncaught page error (`pageerror`): the spec files take `test` from
-  `e2e/fixtures.ts`, which adds the check. One exception, written in the test: while the download is cut,
-  Pyodide's loader leaves errors of its own.
+  `e2e/fixtures.ts`, which adds the check. Two exceptions, written in their tests: while the download is cut,
+  Pyodide's loader leaves errors of its own; and WebKit reports a missing worker script as a page error (the
+  outdated-page test lets that one message through, nothing else). The worker script is imported with an
+  `import` statement, not an `import()` call: WebKit also reports a failed `import()` as a page error, even when
+  caught, and an `import()` cancelled by leaving the page fails that way in normal use.
 - The end-to-end tests find things by role, label and visible text, plus four test ids: `pattern`, `matched`,
   `engine`, `ignored`, and the `data-i` of a character. Changing a text on the page can break a test.
 - The React components have no unit tests: the end-to-end tests cover them.

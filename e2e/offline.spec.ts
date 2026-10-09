@@ -57,7 +57,7 @@ test("when the browser refuses to run Python the page says so, and does not offe
 
 // A release replaces every file of the site. A page opened before it (a tab the browser restored) asks for files that
 // are gone: trying again cannot help, a reload does. Played by answering 404 for the file, as the site then does.
-test("a page opened before a release whose Python script is gone says so, and Reload brings the new version", async ({ page, context }) => {
+test("a page opened before a release whose Python script is gone says so, and Reload brings the new version", async ({ page, context, pageErrors }) => {
   const worker = "**/assets/detect.worker-*.js";
   await context.route(worker, (route) => route.fulfill({ status: 404, body: "Not Found" }));
   await page.goto("./");
@@ -67,6 +67,11 @@ test("a page opened before a release whose Python script is gone says so, and Re
   await page.getByRole("button", { name: "Use these names" }).click();
   await expect(page.getByRole("heading", { name: "A newer version of MetadataMiner was published" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0); // it could never work
+
+  // WebKit also reports the missing script as an uncaught error in the page: that is the failure this test plays, and
+  // the page has told it. Only that report is let through; any other error still fails the test.
+  const missing = (error: string) => error === "Importing a module script failed.";
+  pageErrors.splice(0, pageErrors.length, ...pageErrors.filter((error) => !missing(error)));
 
   await context.unroute(worker);
   await page.getByRole("button", { name: "Reload the page" }).click();
