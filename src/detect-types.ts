@@ -70,8 +70,6 @@ export interface DetectRequest {
 export type ToWorker = { id: number; type: "setNames"; names: string[] } | { id: number; type: "detect"; request: DetectRequest };
 
 export type FromWorker =
-  // The worker script is running and listens: the page sends nothing before (detectClient.ts), or it would be lost.
-  | { type: "started" }
   | { type: "ready" }
   // Python could not be started: every request will fail. `refused`: the browser will not run it, so trying again
   // cannot help; otherwise it did not arrive (the connection dropped).

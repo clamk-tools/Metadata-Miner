@@ -3,15 +3,12 @@ import workerUrl from "./detect.worker.ts?worker&url";
 
 // The worker is started from a one-line script in a blob, which imports the real one. A worker made from a blob is
 // held to the page's Content-Security-Policy (vite.config.ts); one made from a file is held only to the headers that
-// file came with, and GitHub Pages sets none. So Python, too, can only reach this site. The import is a call, not a
-// statement, so a script that cannot be loaded is told as a `failed` message (an import statement that fails is an
-// uncaught error in the page in WebKit). The blob is made when the first worker starts, not when this module is
-// read: the module then needs no page to be imported.
+// file came with, and GitHub Pages sets none. So Python, too, can only reach this site. The blob is made when the
+// first worker starts, not when this module is read: the module then needs no page to be imported.
 let workerBlob: string | undefined;
 const workerHref = () => new URL(workerUrl, document.baseURI).href;
 function blob(): string {
-  const failed = `(e) => self.postMessage({ type: "failed", error: String((e && e.message) || e), refused: false })`;
-  workerBlob ??= URL.createObjectURL(new Blob([`import(${JSON.stringify(workerHref())}).catch(${failed});`], { type: "text/javascript" }));
+  workerBlob ??= URL.createObjectURL(new Blob([`import ${JSON.stringify(workerHref())};`], { type: "text/javascript" }));
   return workerBlob;
 }
 
@@ -55,7 +52,6 @@ interface Waiting {
 // the names are.
 export class DetectClient {
   private worker: Worker | null = null; // null: the browser refused to start one
-  private outbox: ToWorker[] | null = []; // held until the worker script listens ("started"); null once it does
   private waiting = new Map<number, Waiting>();
   private nextId = 1;
   private names: string[] | null = null;
@@ -94,7 +90,6 @@ export class DetectClient {
   private start() {
     this.set({ state: "loading" });
     this.worker = null;
-    this.outbox = [];
     let worker: Worker;
     try {
       worker = new Worker(blob(), { type: "module" });
@@ -107,18 +102,9 @@ export class DetectClient {
     worker.onmessage = (event: MessageEvent<FromWorker>) => {
       if (worker !== this.worker) return; // an answer from a worker that was replaced
       const message = event.data;
-      if (message.type === "started") {
-        const held = this.outbox ?? [];
-        this.outbox = null;
-        for (const m of held) worker.postMessage(m);
-      } else if (message.type === "ready") {
-        this.set({ state: "ready" });
-      } else if (message.type === "failed") {
-        if (this.outbox) this.failAll("Python could not be started"); // the worker script never ran: nothing will answer
-        void this.fail(worker, message.error, message.refused);
-      } else {
-        this.settle(message);
-      }
+      if (message.type === "ready") this.set({ state: "ready" });
+      else if (message.type === "failed") void this.fail(worker, message.error, message.refused);
+      else this.settle(message);
     };
     worker.onerror = (event) => {
       if (worker !== this.worker) return;
@@ -138,8 +124,7 @@ export class DetectClient {
     return new Promise((resolve, reject) => {
       if (!this.worker) return reject(new DetectError("Python could not be started", true));
       this.waiting.set(message.id, { resolve, reject });
-      if (this.outbox) this.outbox.push(message);
-      else this.worker.postMessage(message);
+      this.worker.postMessage(message);
     });
   }
 
