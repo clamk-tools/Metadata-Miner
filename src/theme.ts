@@ -25,15 +25,16 @@ function onStorage(e: StorageEvent) {
   tell();
 }
 
+// One `storage` listener for all the subscribers: added with the first, removed with the last.
 function subscribe(listener: () => void) {
+  if (listeners.size === 0) window.addEventListener("storage", onStorage);
   listeners.add(listener);
   const media = system();
   media.addEventListener("change", listener);
-  window.addEventListener("storage", onStorage);
   return () => {
     listeners.delete(listener);
     media.removeEventListener("change", listener);
-    window.removeEventListener("storage", onStorage);
+    if (listeners.size === 0) window.removeEventListener("storage", onStorage);
   };
 }
 

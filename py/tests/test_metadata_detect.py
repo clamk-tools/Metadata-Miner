@@ -1,7 +1,7 @@
 """Detect: learning a metadata pattern from a labeled sample file name (app/imaging/metadata_detect.py).
 
-The `detect()` tests of HC-Flow's backend/tests/test_metadata_detect.py, unchanged, then (last two sections) the
-tests of what MetadataMiner added: values that hold a separator, and a fix. HC-Flow's endpoint tests are not here:
+The `detect()` tests of HC-Flow's backend/tests/test_metadata_detect.py, unchanged, then (last three sections) the
+tests of what MetadataMiner added: values that hold a separator, and two rounds of fixes. HC-Flow's endpoint tests are not here:
 the standalone has no endpoint, and what replaces it (glue.py) is tested in test_glue.py.
 """
 import re
@@ -485,3 +485,61 @@ def test_a_value_that_holds_a_superscript_digit_is_listed_like_any_other():
     result = detect(names, add={"name": "Size", "start": 0, "end": 4})
 
     assert result["matched"] == 2 and _fields(result)["Size"]["values"] == ["x2²", "x10²"]  # 2 before 10
+
+
+# ---- fixed in MetadataMiner (2026-10-09) ----------------------------------------------------------------------
+
+
+def _repeating_names():
+    """Every part is a letter and a digit, and the letters vary: the text before a label looks like the label."""
+    return ["s1_s2_s3.tif", "s3_x2_w2.tif", "x2_s1_w1.tif"]
+
+
+def test_an_anchored_pattern_reads_the_sample_where_it_was_labeled():
+    names = _repeating_names()
+
+    result = detect(names, add={"name": "F", "start": 7, "end": 8})  # the 3 of s3
+
+    assert result["pattern"].startswith("^")  # tied to the start of the name: otherwise it reads s1_s2, F = 2
+    assert re.search(result["pattern"], "s1_s2_s3.tif")["F"] == "3"
+    assert result["rows"][0]["values"] == {"F": "3"} and result["notes"] == []
+
+
+def test_a_pattern_that_reads_well_where_it_was_labeled_is_not_tied_to_the_start():
+    result = _label(PLATES, B03, ("B03", "Well"), ("DAPI", "Channel"))
+
+    assert not result["pattern"].startswith("^") and result["notes"] == []
+
+
+def test_without_anchoring_a_pattern_that_reads_the_sample_elsewhere_says_so():
+    names = _repeating_names()
+
+    result = detect(names, add={"name": "F", "start": 7, "end": 8}, anchor=False)
+
+    assert result["pattern"] == r"[a-z]+(?P<F>\d+)"  # not tied to the start: anchoring is what the user turned off
+    assert result["notes"] == [
+        "In this name the pattern reads F as 1, not 3: it matches at another place in the name. "
+        "Tick “Anchor with the neighbouring part on each side” to keep it in place."
+    ]
+
+
+def test_when_no_style_fits_enough_names_auto_keeps_the_tightest_of_those_that_fit_the_most():
+    # Sites written s1 or f1: with the "s" left out of the value, half the names have no Site value at all, so every
+    # style fits the same half. The tie goes to the tightest style, not to "any word".
+    names = [f"{r}{c:02d}_{letter}{s}-w{w}.tif" for r in "AB" for c in (1, 2) for letter in "sf" for s in (1, 2) for w in (1, 2, 3)]
+
+    site = _fields(_label(names, 0, ("s1", "Site")))["Site"]
+
+    assert site["fit"] == "shape" and site["pattern"] == r"\d+"
+    assert site["covers"]["shape"] == site["covers"]["word"] == len(names) // 2
+
+
+def test_an_anchored_pattern_whose_value_would_run_on_is_tied_to_the_end_of_the_name_too():
+    names = ["(fld.tif", "(ab.cd.tif", "(wv.tif"]  # "ab.cd" is one value: "several words" would read on into ".tif"
+
+    labeled = detect(names, add={"name": "Well", "start": 1, "end": 4})
+    result = detect(names, fields=labeled["fields"], edit={"name": "Well", "mode": "words"})
+
+    assert result["pattern"].startswith("^") and result["pattern"].endswith("$")
+    assert re.search(result["pattern"], "(fld.tif")["Well"] == "fld" and result["notes"] == []
+    assert sorted(_values(result, "Well")) == ["ab.cd", "fld", "wv"]  # and it reads every name

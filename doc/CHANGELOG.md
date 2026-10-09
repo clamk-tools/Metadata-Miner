@@ -10,6 +10,30 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-09 · Docs: one place to start
+
+- **Seen:** nothing changes on the page.
+- **Inside:** `AGENTS.md` is new: what to read, the checks, the rules that are never broken. The README links it.
+  `doc/ARCHITECTURE.md` (the steps of `detect()`, the proposal's rules) and `doc/CHANGING.md` (how the screen
+  waits for Python, which errors reach the user, running the checks without Python 3.14 or Playwright's browsers)
+  are brought in line with the code.
+- **Decided:** `AGENTS.md` points to the docs instead of repeating them. `CLAUDE.md` stays local and unpublished.
+
+### 2026-10-09 · Focus kept, no blinking, the sample read where it was labeled
+
+- **Seen:** after an edit made with the keyboard the focus stays on the control used (it fell to the top of the
+  page). Controls look dimmed only when an answer takes over 0.4 s, with "Working…", so the screen no longer blinks
+  with many names. With *Anchor* on, a pattern that would read the sample in the wrong place (`s1_s2_s3`, the last
+  `3` read as `2`) starts with `^`, and ends with `$` if needed; when it still misreads, or *Anchor* is off, a
+  note says what it reads. *Auto* keeps the tightest style on a tie. An engine bug shows as "please report it",
+  not as a bare word. "Allow fixed text **to** vary in its numbers".
+- **Inside:** `metadata_detect.py` (`misread`, `build_pattern`, the tie in `analyze`, bounded caches); `glue.py`
+  (only `ValueError` is the user's problem); `MetadataDetect.tsx` (`focused`, the name box waits like every
+  control, `COLORS`); `detect.css` (the 400 ms delay); `theme.ts` (one `storage` listener for all subscribers).
+  Python and end-to-end tests for each.
+- **Decided:** controls stay disabled during a request, or two quick edits would overwrite each other; only their
+  look waits. `^` and `$` are added only with *Anchor* on, which promises the pattern matches in the right place.
+
 ### 2026-10-08 · No line under the paste box
 
 - **Seen:** the line "Only the names are read. No file is opened, and nothing is uploaded." under the paste box is

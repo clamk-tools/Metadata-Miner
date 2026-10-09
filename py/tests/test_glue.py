@@ -94,3 +94,20 @@ def test_a_bug_is_reported_as_unexpected(monkeypatch):
 
     assert reply["ok"] is False and reply["unexpected"] is True
     assert reply["error"] == "AssertionError: field Well does not sit in the sample"
+
+
+def test_a_key_or_type_error_is_a_bug_not_a_message_for_the_user(monkeypatch):
+    def broken(*args, **kwargs):
+        raise KeyError("Well")
+
+    monkeypatch.setattr(glue, "detect", broken)
+
+    reply = _run(suggest=True)
+
+    assert reply == {"ok": False, "unexpected": True, "error": "KeyError: 'Well'"}
+
+
+def test_a_malformed_request_from_the_page_is_a_bug():
+    reply = _run(add={"name": "Well"})  # no start or end: the page sent something it never should
+
+    assert reply["ok"] is False and reply["unexpected"] is True

@@ -26,8 +26,9 @@ def set_names(names_json: str) -> int:
 def run(request_json: str) -> str:
     """One step of the Detect screen: the request the endpoint took, minus the folder. Returns
     {"ok": true, "answer": ...}, or {"ok": false, "error": ...} for a problem the user can fix (what the
-    endpoint answered with a 400). Any other failure is a bug: it comes back with "unexpected", so the page can
-    say so instead of waiting for an answer that never comes.
+    endpoint answered with a 400): `detect()` raises ValueError for those, with a message for the user. Any other
+    failure is a bug, a KeyError or TypeError included: it comes back with "unexpected", so the page says so
+    instead of showing a bare key or waiting for an answer that never comes.
     """
     try:
         request = json.loads(request_json)
@@ -45,7 +46,7 @@ def run(request_json: str) -> str:
             anchor=bool(request.get("anchor", True)),
         )
         return json.dumps({"ok": True, "answer": answer})
-    except (ValueError, KeyError, TypeError) as exc:
+    except ValueError as exc:  # json.JSONDecodeError is one too
         return json.dumps({"ok": False, "error": str(exc)})
     except Exception as exc:  # noqa: BLE001 - nothing may escape: the page is waiting for this answer
         return json.dumps({"ok": False, "unexpected": True, "error": f"{type(exc).__name__}: {exc}"})
