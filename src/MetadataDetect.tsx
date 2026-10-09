@@ -22,7 +22,9 @@ const STYLES: [string, string][] = [
   ["list", "Seen values"],
 ];
 const STYLE_LABEL = Object.fromEntries(STYLES);
-const SLOW_MS = 400; // an answer that takes longer says it is being worked on
+const SLOW_MS = 400; // an answer that takes longer says it is being worked on, and dims the controls (detect.css)
+const COLORS = 6; // the field colours, .g0 to .g5 in detect.css
+const CONTROLS = "button, input, select, textarea";
 
 function reason(e: unknown): string {
   if (e instanceof DetectError && e.unexpected) {
@@ -75,6 +77,7 @@ const GUIDE: [string, string][] = [
   ["+", String.raw`One or more: \d+ reads 3, 12 or 305.`],
   ["*", "Zero or more: (?: [A-Za-z0-9]+)* reads nothing, or more words after a space (Far Red)."],
   ["(?:…)", "A group that is not read. Used to repeat something, or to choose."],
+  ["^ $", "The start and the end of the name. Added only when the pattern would otherwise read the sample in the wrong place."],
   ["a|b", "a or b: (?:Red|Blue)."],
   [String.raw`[^_\-.\s]+`, "Anything except _ - . and spaces: one part of the name."],
   [String.raw`\( \. \[`, "A backslash turns a symbol into plain text."],
@@ -154,9 +157,16 @@ export function MetadataDetect({ client, starting, onClose }: Props) {
   const drag = useRef<{ a: number; b: number; moved: boolean } | null>(null);
   const section = useRef<HTMLElement>(null);
   const regex = useRef<HTMLDivElement>(null);
+  // The control that sent the request, and where it sits among the screen's controls: every control is disabled while
+  // Python works (two quick edits would overwrite each other), and a disabled control loses the keyboard focus.
+  const focused = useRef<{ el: Element; index: number } | null>(null);
 
   const call = async (patch: Partial<DetectRequest>, using = options) => {
     const mine = ++attempt.current;
+    const el = document.activeElement;
+    if (el && el !== section.current && section.current?.contains(el)) {
+      focused.current = { el, index: Array.from(section.current.querySelectorAll(CONTROLS)).indexOf(el) };
+    }
     setBusy(true);
     setError(null);
     const timer = window.setTimeout(() => mine === attempt.current && setSlow(true), SLOW_MS);
@@ -199,6 +209,20 @@ export function MetadataDetect({ client, starting, onClose }: Props) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // When the answer is in, the focus goes back where it was: to the same control, or to the one now in its place (a
+  // removed label's), or else to the screen. Not when the user has put it somewhere else in the meantime.
+  useEffect(() => {
+    const was = focused.current;
+    const screen = section.current;
+    if (busy || !was || !screen) return;
+    focused.current = null;
+    const now = document.activeElement;
+    if (now && now !== document.body && now !== was.el) return;
+    const usable = (el: Element | undefined): el is HTMLElement => el instanceof HTMLElement && el.isConnected && !el.matches(":disabled");
+    const target = usable(was.el) ? was.el : screen.querySelectorAll(CONTROLS)[was.index];
+    if (target !== now) (usable(target) ? target : screen).focus({ preventScroll: true });
+  }, [busy]);
 
   const setOption = (name: "generalize" | "anchor", value: boolean) => {
     const next = { ...options, [name]: value };
@@ -260,7 +284,7 @@ export function MetadataDetect({ client, starting, onClose }: Props) {
   const copyState = copied && copied.pattern === answer?.pattern ? copied : null; // a changed pattern is not the copied one
 
   const fields = answer?.fields ?? [];
-  const colorOf = (name: string | null) => Math.max(0, fields.findIndex((f) => f.name === name)) % 6;
+  const colorOf = (name: string | null) => Math.max(0, fields.findIndex((f) => f.name === name)) % COLORS;
 
   return (
     <section className="dt" aria-labelledby="dt-title" tabIndex={-1} ref={section}>
@@ -400,7 +424,7 @@ export function MetadataDetect({ client, starting, onClose }: Props) {
                   <div className="dt-opt-row">
                     <label className="dt-opt">
                       <input type="checkbox" checked={options.generalize} disabled={busy} onChange={(e) => setOption("generalize", e.target.checked)} />
-                      Allow fixed text vary in its numbers
+                      Allow fixed text to vary in its numbers
                     </label>
                     <Info id="dt-help-numbers" label="What letting the numbers vary does">
                       Writes the numbers you did not label as “any number”, so w1 also matches w2 and w3. Untick it to keep them exactly as in the sample name.
@@ -429,7 +453,7 @@ export function MetadataDetect({ client, starting, onClose }: Props) {
                 <FieldRow
                   key={f.name}
                   field={f}
-                  color={i % 6}
+                  color={i % COLORS}
                   busy={busy}
                   onRename={(to) => void call({ rename: { from: f.name, to } })}
                   onMode={(mode) => void call({ edit: { name: f.name, mode } })}
@@ -525,7 +549,7 @@ function SampleName({
     const name = owner[at] >= 0 ? answer.fields[owner[at]].name : null;
     groups.push(
       name !== null ? (
-        <span key={at} className={`dt-chip g${owner[at] % 6}`}>
+        <span key={at} className={`dt-chip g${owner[at] % COLORS}`}>
           <span>{chars}</span>
           <small>{name}</small>
           <button type="button" className="dt-x" disabled={busy} aria-label={`Remove the ${name} label`} title={`Remove the ${name} label`} onClick={() => onRemove(name)}>
@@ -627,6 +651,7 @@ function FieldRow({
 }) {
   const [name, setName] = useState(field.name);
   const commit = () => {
+    if (busy) return; // the box losing the focus as it is disabled, after Enter sent the rename already
     const to = name.trim();
     if (to && to !== field.name) onRename(to);
     else setName(field.name);
@@ -644,11 +669,12 @@ function FieldRow({
           className="dt-name-input"
           value={name}
           maxLength={24}
+          disabled={busy}
           aria-label={`Name of the field labeled ${field.text}`}
           onChange={(e) => setName(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
+            if (e.key === "Enter") commit();
             if (e.key === "Escape") setName(field.name);
           }}
         />

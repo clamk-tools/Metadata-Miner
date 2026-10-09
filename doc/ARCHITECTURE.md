@@ -70,9 +70,13 @@ Things this flow relies on:
 - **The worker runs requests in order** (a promise queue), so a request never runs before the names it is about.
 - **A late answer is dropped.** `attempt` in `MetadataDetect` counts requests; an answer that is not the latest
   is ignored, also after the screen is closed.
-- **Two kinds of failure.** Python raises `ValueError`, `KeyError` or `TypeError` for a problem the user can fix
-  (a bad field name): the message is shown as it is. Anything else is a bug: `glue.run` marks it `unexpected`,
-  and the screen says something went wrong and asks for a report. `glue.run` never raises.
+- **Two kinds of failure.** Python raises `ValueError` for a problem the user can fix (a bad field name): the
+  message is shown as it is. Anything else, a `KeyError` or `TypeError` included, is a bug: `glue.run` marks it
+  `unexpected`, and the screen says something went wrong and asks for a report. `glue.run` never raises.
+- **Every control waits for the answer.** While a request is in flight the screen's controls are disabled, so two
+  quick edits cannot overwrite each other. They are drawn dimmed only after 0.4 s (`detect.css`), with "Working…".
+  The keyboard focus goes back to the control that sent the request, or to the one now in its place, or to the
+  screen (`focused` in `MetadataDetect`).
 - **Python that does not load.** The worker posts `failed`; the page explains (the connection dropped) and
   offers *Try again*, which is `client.restart()`: a new worker, the names sent again.
 - **Python that the browser will not run.** Before the download, the worker compiles the smallest WebAssembly
@@ -134,7 +138,8 @@ For a sample value `B03`:
 | `list` | `(?:B03\|B04)` | The values seen, longest first |
 
 `auto` tries `shape`, `flex`, `word`, then `words` when some name needs it, and takes the first that reads the
-sample and at least 95% (`COVER`) of the same-layout names. If none does, it takes the one that covers the most.
+sample and at least 95% (`COVER`) of the same-layout names. If none does, it takes the one that covers the most,
+the tightest of them on a tie.
 A style chosen by hand sets `auto` to false and sticks.
 
 ### 5.3 One call to `detect()`
@@ -167,6 +172,10 @@ Both return notes, shown under the sample name.
 - **Generalize** (option, on by default): digits in unlabeled text become `\d+`. Off, they stay as in the sample.
 - Unlabeled letters stay as text when every name has the same ones, and become a letter class when they vary.
 - A part that some names build differently (`ctx.varies`) is matched loosely: `[^_\-.\s]+`.
+- **The sample is read where it was labeled.** A pattern is looked for anywhere in a name (`search`), so loose text
+  could make it match earlier than the labels (`misread`). With *Anchor* on, `build_pattern` then ties it to the
+  start of the name (`^` and everything before the labels), and if that is not enough to its end too (`$`).
+  When neither reads the sample right, or *Anchor* is off, `detect` adds a note saying what it reads instead.
 
 ### 5.6 The proposal (`suggest_fields`)
 
@@ -179,7 +188,8 @@ already accepted is redundant and is dropped.
 
 ### 5.7 Speed
 
-`parse`, `align`, `_runs` and `_shape` are cached with `lru_cache` at module level. The worker keeps the module
+`parse`, `align`, `_runs` and `_shape` are cached with `lru_cache` at module level, each bounded to 100,000
+entries so a long session with many sets of names cannot grow without end. The worker keeps the module
 alive, so the names are parsed once and the cache serves every later request. `Context` also counts over the
 different values a field has, not over every name. The README gives the measured times. Do not add work that
 loops over every name once per field per style.
@@ -197,6 +207,7 @@ loops over every name once per field per style.
 | `MetadataDetect` | `options` | `generalize` and `anchor`, sent with every request |
 | `MetadataDetect` | `pending` | The selection waiting for a label (`{ start, end }`) |
 | `MetadataDetect` | `busy`, `slow`, `error`, `copied` | A request in flight; over 0.4 s (`SLOW_MS`); a message; the copy state |
+| `MetadataDetect` | `focused` (a ref) | The control that sent the request and its place, to give the focus back |
 
 There is no other store, no router and no persistence apart from the theme.
 
@@ -311,7 +322,8 @@ Nothing checks these pairs. When one side changes, change the other.
 | Syntax the engine can write | `GUIDE` in `MetadataDetect.tsx`, the symbol list in the README | The "i" beside *Pattern* is incomplete |
 | The plate pattern in `test_metadata_detect.py` | `PLATE_PATTERN` and `WORDS` in `e2e/detect.spec.ts` | One of the two suites fails |
 | `IMAGE_EXTENSIONS` in `names.ts` | HC-Flow's folder listing; "What counts as a name" in the README | The tool accepts names HC-Flow will not load |
-| Six field colours: `.g0` to `.g5` in `detect.css` | `% 6` in `MetadataDetect.tsx` (three places) | A seventh field has no colour |
+| Six field colours: `.g0` to `.g5` in `detect.css` | `COLORS` in `MetadataDetect.tsx` | A seventh field has no colour |
+| `SLOW_MS` (400) in `MetadataDetect.tsx` | The 400 ms delay of the dimmed controls in `detect.css`; "0.4 s" in the README | "Working…" and the dimming do not show together |
 | Dark tokens under the media query | Dark tokens under `[data-theme="dark"]` | Dark differs between "system" and "chosen" |
 | `--bg` in `theme.css` | `DARK`, `LIGHT` in `e2e/detect.spec.ts` | The theme tests fail |
 | `pyodide` version in `package.json` | `python-version` in `ci.yml`; "Needs … Python" in the README | Tests run on another Python than the one shipped |

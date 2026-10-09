@@ -10,6 +10,29 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-09 · Fixes from a code review: focus, no blinking, the sample read where it was labeled
+
+- **Seen:** after an edit made with the keyboard, the focus stays on the control that was used (it fell to the top
+  of the page); after a removed label, it goes to the control now in its place. The screen no longer blinks on each
+  edit with many names: the controls are drawn dimmed only when an answer takes over 0.4 s, with "Working…". With
+  *Anchor* ticked, a pattern that would have read the sample name in the wrong place (`s1_s2_s3`, labeling the last
+  `3`, read `2`) now starts with `^`, and ends with `$` if needed; the "i" beside *Pattern* explains both. When the
+  pattern still reads a label wrongly, or *Anchor* is unticked, a note under the name says what it reads. When no
+  style fits most names, *Auto* now keeps the tightest one (`\d+`, not *any word*). The option reads "Allow fixed
+  text **to** vary in its numbers". A bug in the engine shows as "something went wrong, please report it", not as
+  a bare word such as `'Well'`.
+- **Inside:** `metadata_detect.py`: `misread`, `build_pattern` (tie to the start, then to the end), the note in
+  `detect`, the tie in `analyze`, `_runs` and `_shape` bounded. `glue.py`: only `ValueError` is the user's problem.
+  `MetadataDetect.tsx`: the focus is given back after each answer (`focused`), the field name box waits for the
+  answer like every other control and Enter keeps the focus, `COLORS` for the three `% 6`. `detect.css`: the 400 ms
+  delay before disabled controls are dimmed. `theme.ts`: one `storage` listener, added with the first subscriber and
+  removed with the last (it was removed with the first that left). Tests: Python (the tie to the start and to the
+  end, the note, the tie of *Auto*, the two kinds of failure) and end to end (focus, no dimming of a quick answer,
+  `^`).
+- **Decided:** the controls stay disabled during a request (two quick edits would otherwise overwrite each other);
+  only their look waits. The tie to the start or end is added only with *Anchor* on, which promises the pattern
+  matches only in the right place; unanchored, the pattern is left as asked and the note warns.
+
 ### 2026-10-08 · No line under the paste box
 
 - **Seen:** the line "Only the names are read. No file is opened, and nothing is uploaded." under the paste box is

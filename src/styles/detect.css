@@ -171,6 +171,16 @@
   transition-delay: 0s;
 }
 
+/* While Python works on an edit every control is disabled, so that two quick edits cannot overwrite each other. Most
+   answers come in a few milliseconds: a disabled control dims only after 400 ms (SLOW_MS in MetadataDetect.tsx), when
+   "Working…" shows, so a quick edit does not make the screen blink. A delayed switch, not a fade, so it is kept
+   under prefers-reduced-motion too (theme.css takes every transition out there). Enabling is immediate. */
+.dt button:disabled,
+.dt input:disabled,
+.dt select:disabled {
+  transition: opacity 0s linear 400ms !important;
+}
+
 /* ---------- 1 · the sample name ---------- */
 
 .dt-nav {

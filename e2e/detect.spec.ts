@@ -303,7 +303,7 @@ test("unticking and re-ticking an option gives the same pattern, labels and valu
   await expect(pattern(page)).toHaveText(PLATE_PATTERN);
 
   const anchor = page.getByLabel("Anchor with the neighbouring part on each side");
-  const numbers = page.getByLabel("Allow fixed text vary in its numbers");
+  const numbers = page.getByLabel("Allow fixed text to vary in its numbers");
   await page.getByRole("button", { name: "Clear all" }).click();
   await page.getByLabel("Pick a part").getByRole("button", { name: "DAPI" }).click();
   await page.getByRole("button", { name: "Channel", exact: true }).click();
@@ -341,4 +341,74 @@ test("a value that is two words in some names is read, and the odd name left wid
   await expect(page.getByText("Widened Filter to “several words” so it fits both FITC and Texas Red.")).toBeVisible();
   await expect(page.getByTestId("pattern")).toHaveText(String.raw`(?P<Row>[A-Z]) - (?P<Column>\d+)\( wv (?P<Channel>${WORDS}) - (?P<Filter>${WORDS})\)`);
   await expect(page.getByText("4 distinct · Blue, Far Red, Green, Red · text")).toBeVisible(); // what Channel reads
+});
+
+test("the keyboard focus stays on the control that was used while Python answers", async ({ page }) => {
+  await paste(page, FOUR);
+  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`);
+
+  const again = page.getByRole("button", { name: "Suggest again" });
+  await again.focus();
+  await page.keyboard.press("Enter");
+  await expect(again).toBeEnabled();
+  await expect(again).toBeFocused();
+
+  const anchor = page.getByLabel("Anchor with the neighbouring part on each side");
+  await anchor.focus();
+  await page.keyboard.press("Space");
+  await expect(anchor).not.toBeChecked();
+  await expect(anchor).toBeFocused();
+
+  const style = page.getByLabel("Pattern style of Well");
+  await style.focus(); // selectOption alone does not put the focus on it
+  await style.selectOption("flex");
+  await expect(pattern(page)).toContainText(String.raw`(?P<Well>[A-Z]+\d+)`);
+  await expect(style).toBeFocused();
+
+  // a rename gives a new card: the focus goes to its name box
+  const name = page.getByLabel("Name of the field labeled A01");
+  await name.fill("Position");
+  await name.press("Enter");
+  await expect(pattern(page)).toContainText("(?P<Position>");
+  await expect(name).toBeFocused();
+
+  // a removed label's control is gone: the focus goes to the control now in its place, not to the top of the page
+  await page.getByRole("button", { name: "Remove Position" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Labels · 1")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest(".dt"))).toBe(true);
+});
+
+test("a quick answer does not dim the screen", async ({ page }) => {
+  await paste(page, FOUR);
+  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`);
+
+  // The moment Python is asked, every control is disabled; it is not drawn dimmed before 400 ms.
+  await page.evaluate(() => {
+    const copy = Array.from(document.querySelectorAll("button")).find((b) => b.textContent?.includes("Copy this pattern"))!;
+    const seen: string[] = [];
+    (window as unknown as { seen: string[] }).seen = seen;
+    new MutationObserver(() => {
+      if (copy.disabled) seen.push(getComputedStyle(copy).opacity);
+    }).observe(copy, { attributes: true, attributeFilter: ["disabled"] });
+  });
+  await page.getByRole("button", { name: "Suggest again" }).click();
+  await expect(page.getByRole("button", { name: "Copy this pattern" })).toBeEnabled();
+  expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen)).toEqual(["1"]);
+  await expect(page.getByRole("button", { name: "Copy this pattern" })).toBeEnabled();
+});
+
+test("a pattern that would read the sample in the wrong place is tied to the start of the name", async ({ page }) => {
+  await paste(page, ["s1_s2_s3.tif", "s3_x2_w2.tif", "x2_s1_w1.tif"]); // the text before the last 3 looks like it
+  await expect(matched(page)).toBeVisible();
+  await page.getByRole("button", { name: "Clear all" }).click();
+
+  await page.locator('[data-i="7"]').click(); // the 3 of s3
+  await page.getByRole("button", { name: "Site", exact: true }).click();
+  await expect(pattern(page)).toHaveText(String.raw`^[a-z]+\d+_[a-z]+\d+_s(?P<Site>\d+)`);
+  await expect(page.getByRole("row", { name: "s1_s2_s3.tif 3" })).toBeVisible();
+
+  // unanchored, the pattern is left as asked, and the page says what it reads
+  await page.getByLabel("Anchor with the neighbouring part on each side").uncheck();
+  await expect(page.getByText("In this name the pattern reads Site as 1, not 3")).toBeVisible();
 });

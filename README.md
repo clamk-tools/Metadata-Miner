@@ -31,7 +31,7 @@ The page opens on a single step: the names. Then it shows the Detect screen on t
 The cross at the top right of the Detect screen goes back to the names, and so does the tool's name in the header.
 
 The **i** beside *Pattern* is a short reference for every symbol the tool writes (`(?P<…>)`, `[A-Z]`, `\d`, `{2}`, `+`, `*`, `(?:…)`,
-`|`, `[^_\-.\s]`, `\`), and the two options under the pattern each have an **i** with an example.
+`|`, `[^_\-.\s]`, `^`, `$`, `\`), and the two options under the pattern each have an **i** with an example.
 
 Each label has a pattern style (same shape, flexible, any word, several words, seen values). *Auto* picks the
 tightest one that fits at least 95% of the names.
@@ -83,13 +83,19 @@ serves (it is the code in this repository, built by its CI).
   try again. Tested by taking the word out of the policy, not on an old browser.
 - **Speed with many names**: every change is checked against all the names. Measured on a desktop PC, a change
   takes under 0.06 s with 500 names; with 12,000 names, a change (a label, an option, another sample name) takes
-  about 0.2 s and the first suggestion about 1 s. The page shows "Working…" when an answer takes longer than 0.4 s.
+  about 0.2 s and the first suggestion about 1 s. The controls wait while an answer is worked out; they are drawn
+  dimmed, and the page shows "Working…", only when it takes longer than 0.4 s. The keyboard focus stays where it was.
 - **Only the file name is labeled**, not the names of its folders.
 - **A value in several words** is read only from a sample that has it as one word (`Blue`, not `Far Red`), and
   only when there is a single way to line the longer name up with the sample. `plate1_extra_B03` against
   `plate1_B03` could be cut two ways, so that name is left out as before. Moving the sample to a longer name with
   the arrows clears the labels.
 - **An existing pattern cannot be loaded** to edit it: the pattern is always written from labels.
+- **A pattern that reads the sample in the wrong place.** A pattern is looked for anywhere in a name, so loose text
+  around the labels could make it read an earlier stretch (`s1_s2_s3`, labeling the last `3`, read `2`). With
+  *Anchor* ticked, such a pattern is tied to the start of the name (`^`), and to its end (`$`) when that is not
+  enough. When nothing can pin it down (two loose stretches in one part), or *Anchor* is unticked, a note under the
+  sample name says what it reads instead.
 - **Characters outside the Basic Multilingual Plane** (an emoji in a file name) shift the selection by one
   character. Same limit as HC-Flow.
 - **Browsers**: tested automatically in Chromium, Firefox and WebKit. Safari itself has not been tried on a Mac or
@@ -125,17 +131,22 @@ blue, green, coral and amber, plus a violet and a grey added here (`theme.css`).
 
 The Python files were copied from HC-Flow at commit `fada151` plus the local changes of 2026-10-02, and keep
 HC-Flow's module path (`app.imaging`). `metadata.py` is cut down to what Detect calls; HC-Flow keeps its full file.
-`metadata_detect.py` has three changes made here on 2026-10-02 and **not yet in HC-Flow**:
+`metadata_detect.py` has these changes made here (2026-10-02 and 2026-10-09) and **not yet in HC-Flow**:
 
 - values that hold a separator (`align`, `widen`, the `words` style);
 - speed: the parsed names and how the longer ones line up with the sample are cached between requests, and a
   request counts over the different values a field has rather than over every name. In the browser at 12,000
   names, a change went from 0.5 to 0.9 s down to about 0.2 s; the answers are the same;
-- a fix: a value with a superscript digit next to its digits (`10²`) made every request fail.
+- a fix: a value with a superscript digit next to its digits (`10²`) made every request fail;
+- a fix: with *Anchor* on, a pattern that would read the sample somewhere else than its labels is tied to the start
+  of the name (`^`), and to its end (`$`) if needed; otherwise a note says what it reads (`misread`, `build_pattern`);
+- a fix: when no style fits 95% of the names, *Auto* keeps the tightest of those that fit the most (it took the
+  loosest on a tie);
+- the two remaining unbounded caches (`_runs`, `_shape`) are bounded like the others.
 
-Their tests are the last two sections of `py/tests/test_metadata_detect.py`. The file is still a drop-in for
+Their tests are the last three sections of `py/tests/test_metadata_detect.py`. The file is still a drop-in for
 HC-Flow: copying it there also needs one line in HC-Flow's `MetadataDetect.tsx`, `["words", "Several words"]` in
-`STYLES`, or the screen fails on a label whose style is `words`. Until then, do not copy HC-Flow's file over this
+`STYLES`, or the screen fails on a label whose style is `words`, and a line for `^ $` in its `GUIDE`. Until then, do not copy HC-Flow's file over this
 one: these changes would be lost.
 
 ## Developing

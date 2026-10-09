@@ -147,7 +147,7 @@ beside them.
    `prefers-reduced-motion`.
 5. If `--bg` changes, update `DARK` and `LIGHT` in `e2e/detect.spec.ts`.
 6. A seventh field colour needs a `.g6` in `detect.css`, its tokens in `theme.css` (light and both dark blocks),
-   and `% 6` changed in three places in `MetadataDetect.tsx`.
+   and `COLORS` changed in `MetadataDetect.tsx`.
 
 ### 6.7 The Pyodide version
 

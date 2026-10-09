@@ -56,7 +56,7 @@ def esc(text: str) -> str:
 # ---- names, parts and runs ------------------------------------------------------------------------------------
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=100_000)
 def _runs(text: str) -> tuple[str, ...]:
     """Cached: every request reads the same names again, and a plate holds the same few hundred different parts."""
     return tuple(_RUN.findall(text))
@@ -67,7 +67,7 @@ def _run_type(run: str) -> str:
     return "d" if run[0] in "0123456789" else "a" if run[0].isalpha() and run[0].isascii() else "o"
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=100_000)
 def _shape(text: str) -> str:
     return "".join(_run_type(r) for r in _runs(text))
 
@@ -511,16 +511,16 @@ def analyze(ctx: Context, fields: list[Field]) -> list[Item]:
                 compiled = re.compile(pattern)
                 covers[mode] = sum(times for value, times in counts.items() if compiled.fullmatch(value))
 
-        fit, best = None, "word"
+        fit, best = None, None
         for mode in AUTO_ORDER + (("words",) if inner else ()):
             if not re.fullmatch(patterns[mode], core):
                 continue
             if covers[mode] / total >= COVER:
                 fit = mode
                 break
-            if covers[mode] >= covers[best] or not re.fullmatch(patterns[best], core):
-                best = mode  # nothing reaches the threshold: keep the style that covers the most
-        fit = fit or best
+            if best is None or covers[mode] > covers[best]:
+                best = mode  # nothing reaches the threshold: the style that covers the most, the tightest on a tie
+        fit = fit or best or "word"
         mode = fit if field.auto else field.mode
         items.append(Item(
             field=field, start=start, end=end, text=text, eligible=prefixed is not None,
@@ -536,8 +536,34 @@ def _part_at(sample: Parsed, pos: int) -> int:
     return next(i for i, part in enumerate(sample.parts) if part.start <= pos < part.end)
 
 
+def misread(pattern: str, items: list[Item], sample: str) -> list[tuple[Item, str | None]]:
+    """The fields the pattern does not read where they were labeled in the sample, with what it reads instead. A
+    pattern is looked for anywhere in a name (`extract_metadata`), so loose text around the labels can make it match
+    earlier in the name than the labels are (`s1_s2_s3`, labeling the last 3)."""
+    match = re.search(pattern, sample) if pattern else None
+    wrong = []
+    for item in items:
+        span = match.span(item.field.name) if match else (-1, -1)
+        if span != (item.start + len(item.prefix_lit), item.end):
+            wrong.append((item, match.group(item.field.name) if match else None))
+    return wrong
+
+
 def build_pattern(ctx: Context, items: list[Item]) -> list[tuple[str, str | None]]:
-    """The pattern as (text, field name or None) pieces, so the screen can colour each group."""
+    """The pattern as (text, field name or None) pieces, so the screen can colour each group. With `anchor`, a
+    pattern that would read the sample somewhere else than its labels is tied to the start of the name (`^`), and
+    if that is not enough to its end too (`$`). When neither reads the sample right (two loose stretches in one
+    part, where nothing tells where one ends), the anchored pattern is kept and `detect` says so in a note."""
+    pieces = _pieces(ctx, items)
+    if ctx.anchor and misread("".join(text for text, _ in pieces), items, ctx.sample.text):
+        for to_end in (False, True):
+            tied = [("^", None)] + _pieces(ctx, items, from_start=True, to_end=to_end) + ([("$", None)] if to_end else [])
+            if not misread("".join(text for text, _ in tied), items, ctx.sample.text):
+                return tied
+    return pieces
+
+
+def _pieces(ctx: Context, items: list[Item], from_start: bool = False, to_end: bool = False) -> list[tuple[str, str | None]]:
     if not items:
         return []
     sample = ctx.sample
@@ -549,6 +575,10 @@ def build_pattern(ctx: Context, items: list[Item]) -> list[tuple[str, str | None
         start = sample.parts[first_part - 1].start
     if ctx.anchor and last_part < len(sample.parts) - 1 and not _EXTENSION.fullmatch(sample.parts[last_part + 1].text):
         end = sample.parts[last_part + 1].end
+    if from_start:
+        start = 0
+    if to_end:
+        end = len(sample.text)
 
     pieces: list[tuple[str, str | None]] = []
     if first.start > start:
@@ -830,6 +860,13 @@ def detect(
     items = analyze(ctx, current)
     pieces = build_pattern(ctx, items)
     pattern = "".join(text for text, _ in pieces)
+    for item, got in misread(pattern, items, ctx.sample.text):
+        notes.append(
+            f"In this name the pattern reads {item.field.name} as {got if got is not None else 'nothing'}, not "
+            f"{item.text[len(item.prefix_lit):]}: it matches at another place in the name. "
+            + ("Tick “Anchor with the neighbouring part on each side” to keep it in place." if not ctx.anchor
+               else "Label the parts around it, or choose a tighter style, to pin it down.")
+        )
 
     groups: list[dict | None] = []
     if pattern:
