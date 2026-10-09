@@ -10,6 +10,19 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-09 · A page opened before a release says so
+
+- **Seen:** a page left open while a new version was published (a tab the phone's browser restored) said "Python
+  could not be loaded (the worker script could not be loaded)", and *Try again* could never work. It now says "A
+  newer version of MetadataMiner was published" and offers *Reload the page*. The same offer shows when the page's
+  own script is missing and it cannot start at all. The paste box is empty after the reload.
+- **Inside:** `detectClient.ts` asks the site for the worker script when Python does not load: a 404 means the page
+  is out of date (`outdated` in the engine status). `App.tsx` shows the reload. `public/theme.js` is now
+  `public/boot.js`: it also catches a missing script or style of the site. Two end-to-end tests in
+  `e2e/offline.spec.ts`.
+- **Decided:** a reload, not a stored copy of the names: the page stores nothing apart from the theme. One file
+  runs before the page, not two, so the first paint waits for no extra request.
+
 ### 2026-10-09 · Docs: one place to start
 
 - **Seen:** nothing changes on the page.

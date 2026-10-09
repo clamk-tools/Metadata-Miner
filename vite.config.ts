@@ -42,7 +42,7 @@ function pyodideRuntime(): Plugin {
 }
 
 // What the built page may load, and from where: its own files only. GitHub Pages sets no header, so the policy is a
-// <meta> tag, written at build time. No inline script is allowed: the theme script is a file (public/theme.js). The
+// <meta> tag, written at build time. No inline script is allowed: the first script is a file (public/boot.js). The
 // dev server is left without the policy: its hot reload needs an inline script and a WebSocket.
 const POLICY = [
   "default-src 'none'",

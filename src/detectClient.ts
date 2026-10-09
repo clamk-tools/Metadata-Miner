@@ -6,16 +6,30 @@ import workerUrl from "./detect.worker.ts?worker&url";
 // file came with, and GitHub Pages sets none. So Python, too, can only reach this site. The blob is made when the
 // first worker starts, not when this module is read: the module then needs no page to be imported.
 let workerBlob: string | undefined;
+const workerHref = () => new URL(workerUrl, document.baseURI).href;
 function blob(): string {
-  workerBlob ??= URL.createObjectURL(
-    new Blob([`import ${JSON.stringify(new URL(workerUrl, document.baseURI).href)};`], { type: "text/javascript" }),
-  );
+  workerBlob ??= URL.createObjectURL(new Blob([`import ${JSON.stringify(workerHref())};`], { type: "text/javascript" }));
   return workerBlob;
 }
 
+// A release replaces every file of the site, and the worker script's name changes with its content. A page opened
+// before a release (a tab the browser restored) still asks for the old script: it is gone, and only a reload brings
+// the page and its scripts back in step. A dropped connection, by contrast, answers nothing at all.
+async function outdated(): Promise<boolean> {
+  try {
+    return (await fetch(workerHref(), { method: "HEAD", cache: "no-store" })).status === 404;
+  } catch {
+    return false;
+  }
+}
+
 // Python takes a few seconds to arrive on a first visit, and may not arrive at all. `refused`: the browser will not
-// run it, so trying again cannot help; otherwise it did not arrive (the connection dropped).
-export type EngineStatus = { state: "loading" } | { state: "ready" } | { state: "failed"; error: string; refused: boolean };
+// run it, so trying again cannot help. `outdated`: a newer release replaced this page's files, so only a reload
+// helps. Otherwise it did not arrive (the connection dropped), and trying again may.
+export type EngineStatus =
+  | { state: "loading" }
+  | { state: "ready" }
+  | { state: "failed"; error: string; refused: boolean; outdated: boolean };
 
 // A request Python refused. `unexpected` tells a bug (or Python not running) from a problem the user can fix.
 export class DetectError extends Error {
@@ -81,7 +95,7 @@ export class DetectClient {
       worker = new Worker(blob(), { type: "module" });
     } catch (e) {
       // some browsers throw when their policy refuses the worker; the others send an error event (below)
-      this.set({ state: "failed", error: e instanceof Error ? e.message : String(e), refused: true });
+      this.set({ state: "failed", error: e instanceof Error ? e.message : String(e), refused: true, outdated: false });
       return;
     }
     this.worker = worker;
@@ -89,15 +103,21 @@ export class DetectClient {
       if (worker !== this.worker) return; // an answer from a worker that was replaced
       const message = event.data;
       if (message.type === "ready") this.set({ state: "ready" });
-      else if (message.type === "failed") this.set({ state: "failed", error: message.error, refused: message.refused });
+      else if (message.type === "failed") void this.fail(worker, message.error, message.refused);
       else this.settle(message);
     };
     worker.onerror = (event) => {
       if (worker !== this.worker) return;
       event.preventDefault();
-      this.set({ state: "failed", error: event.message || "the worker script could not be loaded", refused: false });
       this.failAll("Python could not be started");
+      void this.fail(worker, event.message || "the worker script could not be loaded", false);
     };
+  }
+
+  // The status stays `loading` while the site is asked whether this page is out of date: a moment, once.
+  private async fail(worker: Worker, error: string, refused: boolean) {
+    const stale = !refused && (await outdated());
+    if (worker === this.worker) this.set({ state: "failed", error, refused, outdated: stale });
   }
 
   private send(message: ToWorker): Promise<number | MetadataDetect> {

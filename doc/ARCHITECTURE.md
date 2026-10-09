@@ -44,8 +44,8 @@ answer and never builds a pattern itself.
 | `src/clipboard.ts` | Copy, with a fallback when the browser refuses |
 | `src/theme.ts`, `src/ThemeSwitch.tsx` | Light or dark: system setting, switch, stored choice |
 | `src/styles/` | `theme.css` tokens and native controls, `app.css` the page, `detect.css` the Detect screen |
-| `index.html` | The page shell; loads `theme.js` ahead of everything else |
-| `public/theme.js` | Applies the stored theme before the first paint |
+| `index.html` | The page shell; loads `boot.js` ahead of everything else |
+| `public/boot.js` | Before the page's own script: applies the stored theme, and says so when the page's own files are missing (a page opened before a release) |
 | `vite.config.ts` | The build, and two plugins of its own: the Pyodide runtime put in `pyodide/<version>/`, the Content-Security-Policy written into the built page |
 | `py/tests/`, `src/*.test.ts`, `e2e/` | The tests (section 8) |
 | `.github/workflows/ci.yml`, `.githooks/` | CI and deploy; the privacy guard |
@@ -79,6 +79,12 @@ Things this flow relies on:
   screen (`focused` in `MetadataDetect`).
 - **Python that does not load.** The worker posts `failed`; the page explains (the connection dropped) and
   offers *Try again*, which is `client.restart()`: a new worker, the names sent again.
+- **A page opened before a release.** A release replaces every file, and the worker script's name changes with its
+  content, so a page the browser kept from before asks for files that are gone. When Python does not load,
+  `detectClient.ts` asks the site for the worker script (`HEAD`): a 404 means the page is out of date
+  (`outdated`), and the page offers *Reload the page* instead of *Try again*. When the page's own script or styles
+  are missing, the page cannot start at all: `public/boot.js`, which runs first, catches the failed file and shows
+  the same offer.
 - **Python that the browser will not run.** Before the download, the worker compiles the smallest WebAssembly
   module there is. A browser that refuses it (too old for the policy of section 9, or WebAssembly turned off)
   would fail on every try: the worker posts `failed` with `refused`, and the page says so without offering
@@ -231,10 +237,9 @@ because HC-Flow refuses that folder.
 
 ### 6.4 Theme
 
-`public/theme.js`, a plain script that `index.html` loads in its `<head>`, puts a stored choice on
+`public/boot.js`, a plain script that `index.html` loads in its `<head>`, puts a stored choice on
 `<html data-theme>` before the first paint. It is a file because the page's policy allows no inline script
-(section 9). `theme.ts` reads it, follows the
-system setting when there is none, and stores a choice under `clamk-tools:theme` in `localStorage`. The hub and
+(section 9). `theme.ts` reads it, follows the system setting when there is none, and stores a choice under `clamk-tools:theme` in `localStorage`. The hub and
 every Clamk tool share that key and the same origin, so the choice holds across them.
 
 ## 7. Styles
@@ -271,8 +276,9 @@ every Clamk tool share that key and the same origin, so the choice holds across 
   start from a blob. The other makes a request to another host from inside the page and from inside the worker,
   and fails unless the browser refuses both. It also checks that each refusal is reported where the first test
   listens. WebKit reports nothing inside a worker: there, a refusal in the worker during the session is not seen.
-- `e2e/offline.spec.ts` covers Python that does not load: the download cut, then let through; and a browser that
-  refuses WebAssembly, played by taking `'wasm-unsafe-eval'` out of the policy of the page it is served.
+- `e2e/offline.spec.ts` covers Python that does not load: the download cut, then let through; a browser that
+  refuses WebAssembly, played by taking `'wasm-unsafe-eval'` out of the policy of the page it is served; and a page
+  opened before a release, played by answering 404 for the worker script, then for the page's own script.
 - `PLATE_PATTERN` in `e2e/detect.spec.ts` is the same string as the Python test asserts for the same plate of
   names. The browser and plain Python are held to one answer.
 - Every end-to-end test fails on an uncaught page error (`pageerror`): the spec files take `test` from
@@ -331,7 +337,7 @@ Nothing checks these pairs. When one side changes, change the other.
 | `--bg` in `theme.css` | `DARK`, `LIGHT` in `e2e/detect.spec.ts` | The theme tests fail |
 | `pyodide` version in `package.json` | `python-version` in `ci.yml`; "Needs … Python" in the README | Tests run on another Python than the one shipped |
 | Repository name `Metadata-Miner` | `preview` script, `playwright.config.ts`, the footer link in `App.tsx`, the README | Preview and tests use a path the site does not have |
-| `clamk-tools:theme` in `theme.ts` | The same key in `public/theme.js`; the hub | The theme flashes, or is not shared |
+| `clamk-tools:theme` in `theme.ts` | The same key in `public/boot.js`; the hub | The theme flashes, or is not shared |
 | Texts and labels on the page | The locators in `e2e/`; the words quoted in the README | Tests fail; the README describes another page |
 | "About 6 MB" and the measured times | `App.tsx` message, README "Known limits" | The page promises what is no longer true |
 | `PYODIDE_FILES` in `vite.config.ts` | The files `loadPyodide` fetches at the pinned `pyodide` version; `pyodide.asm.wasm` in `e2e/network.spec.ts` | Python does not load: every end-to-end test fails |

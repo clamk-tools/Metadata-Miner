@@ -10,7 +10,7 @@ const system = () => window.matchMedia("(prefers-color-scheme: dark)");
 const listeners = new Set<() => void>();
 const tell = () => listeners.forEach((listener) => listener());
 
-// The system's setting until a theme is chosen; index.html has already put a stored choice on <html>.
+// The system's setting until a theme is chosen; public/boot.js has already put a stored choice on <html>.
 function current(): Theme {
   const chosen = root().dataset.theme;
   if (chosen === "light" || chosen === "dark") return chosen;

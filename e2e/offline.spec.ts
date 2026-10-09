@@ -54,3 +54,35 @@ test("when the browser refuses to run Python the page says so, and does not offe
 
   expect(pyodideAsked).toBe(false); // found out before the download, not after it
 });
+
+// A release replaces every file of the site. A page opened before it (a tab the browser restored) asks for files that
+// are gone: trying again cannot help, a reload does. Played by answering 404 for the file, as the site then does.
+test("a page opened before a release whose Python script is gone says so, and Reload brings the new version", async ({ page, context }) => {
+  const worker = "**/assets/detect.worker-*.js";
+  await context.route(worker, (route) => route.fulfill({ status: 404, body: "Not Found" }));
+  await page.goto("./");
+
+  await expect(page.getByTestId("engine")).toContainText("A newer version of MetadataMiner was published");
+  await page.getByLabel("Paste the names").fill(NAMES);
+  await page.getByRole("button", { name: "Use these names" }).click();
+  await expect(page.getByRole("heading", { name: "A newer version of MetadataMiner was published" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0); // it could never work
+
+  await context.unroute(worker);
+  await page.getByRole("button", { name: "Reload the page" }).click();
+  await page.getByLabel("Paste the names").fill(NAMES); // a reload empties the paste box: nothing is stored
+  await page.getByRole("button", { name: "Use these names" }).click();
+  await expect(page.getByTestId("matched")).toHaveText("Matched 4 of 4 names");
+});
+
+test("a page opened before a release whose own script is gone says so, and Reload brings the new version", async ({ page, context }) => {
+  const script = "**/assets/index-*.js";
+  await context.route(script, (route) => route.fulfill({ status: 404, body: "Not Found" }));
+  await page.goto("./");
+
+  await expect(page.getByRole("alert")).toHaveText("A newer version of MetadataMiner was published. Reload the page to use it.");
+
+  await context.unroute(script);
+  await page.getByRole("button", { name: "Reload the page" }).click();
+  await expect(page.getByLabel("Paste the names, one per line")).toBeVisible();
+});

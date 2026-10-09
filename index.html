@@ -6,9 +6,10 @@
     <title>MetadataMiner</title>
     <meta name="description" content="Write the metadata regex for your image file names by labeling one of them. Runs in your browser: nothing is uploaded." />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <!-- The stored theme, applied before the first paint (public/theme.js). Not a module, so the page waits for it;
-         not written here, because the built page's Content-Security-Policy allows no inline script (vite.config.ts). -->
-    <script src="/theme.js"></script>
+    <!-- public/boot.js: the stored theme, applied before the first paint, and a notice if the page's own files are
+         missing (a page opened before a release). Not a module, so it runs first; not written here, because the
+         built page's Content-Security-Policy allows no inline script (vite.config.ts). -->
+    <script src="/boot.js"></script>
   </head>
   <body>
     <div id="root"></div>
