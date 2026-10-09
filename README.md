@@ -79,6 +79,10 @@ serves (it is the code in this repository, built by its CI).
 
 - **First visit**: the Python runtime is about 6 MB to download. The browser keeps it afterwards. The names can be
   given while it loads. If the download fails, the page says so and offers to try again.
+- **A page left open across a release**: a release replaces the site's files, so a page opened before it (a tab
+  the browser restored) cannot load Python or start. It says a newer version was published and offers *Reload the
+  page*; the paste box is then empty, since nothing is stored. Pages opened before 2026-10-09 show "Python could
+  not be loaded" instead: reload them by hand.
 - **An old browser**: the page's policy allows WebAssembly with a word that Safari learned in version 16, Chrome
   in 97 and Firefox in 102. An older one refuses to run Python, and so does a browser with WebAssembly turned
   off (Lockdown Mode on an iPhone or a Mac): the page says the browser cannot run Python, and does not offer to

@@ -198,7 +198,7 @@ files and nothing else. The dev server has no policy, so a refusal shows only on
 2. `npm run build`, `npm run preview`, and look at the browser's console: a refusal is an error that names the
    directive (`img-src`, `style-src`, ...).
 3. What the policy refuses without saying much: a `style="…"` attribute written as HTML (React's `style={{…}}`
-   is fine), any inline `<script>` (the theme script is a file, `public/theme.js`, for that reason), `eval`.
+   is fine), any inline `<script>` (the first script is a file, `public/boot.js`, for that reason), `eval`.
 4. If a directive has to be widened, widen that one only, and never to another host: that reverses a decision of
    `doc/ARCHITECTURE.md` section 11.
 5. `e2e/network.spec.ts` must still pass in the three browsers. It also fails when the policy refused something
