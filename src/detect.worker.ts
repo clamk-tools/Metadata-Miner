@@ -71,3 +71,4 @@ let queue: Promise<void> = Promise.resolve();
 self.addEventListener("message", (event: MessageEvent<ToWorker>) => {
   queue = queue.then(() => handle(event.data));
 });
+post({ type: "started" }); // listening from here on: the page may send (Python is still loading, the queue waits for it)

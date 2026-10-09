@@ -68,6 +68,9 @@ answer and never builds a pattern itself.
 Things this flow relies on:
 
 - **The worker runs requests in order** (a promise queue), so a request never runs before the names it is about.
+- **Nothing is sent before the worker listens.** The worker script is loaded by an `import()` call, so it starts
+  after the worker does, and a message sent earlier would be lost. It posts `started` once it listens;
+  `DetectClient` holds what is sent until then (`outbox`).
 - **A late answer is dropped.** `attempt` in `MetadataDetect` counts requests; an answer that is not the latest
   is ignored, also after the screen is closed.
 - **Two kinds of failure.** Python raises `ValueError` for a problem the user can fix (a bad field name): the
@@ -303,7 +306,9 @@ every Clamk tool share that key and the same origin, so the choice holds across 
   `contentSecurityPolicy` in `vite.config.ts` writes it at build time: everything from the site itself only,
   WebAssembly allowed, no inline script (the theme script is a file for that reason). The dev server runs
   without the policy: hot reload needs an inline script and a WebSocket.
-- **The worker starts from a blob** (`detectClient.ts`): a one-line script that imports the real worker script.
+- **The worker starts from a blob** (`detectClient.ts`): a one-line script that imports the real worker script,
+  with an `import()` call so that a script that cannot be loaded is reported as `failed` rather than as an uncaught
+  error in the page (WebKit reports a failed import statement that way).
   A worker made from a blob is held to the page's policy; a worker made from a file is held only to the headers
   that file came with, and GitHub Pages sets none. Without the blob, Python could reach any host. Because of it,
   the worker reads its own address from `import.meta.url`, not from `self.location`.

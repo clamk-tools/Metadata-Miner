@@ -18,7 +18,9 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
   own script is missing and it cannot start at all. The paste box is empty after the reload.
 - **Inside:** `detectClient.ts` asks the site for the worker script when Python does not load: a 404 means the page
   is out of date (`outdated` in the engine status). `App.tsx` shows the reload. `public/theme.js` is now
-  `public/boot.js`: it also catches a missing script or style of the site. Two end-to-end tests in
+  `public/boot.js`: it also catches a missing script or style of the site. The blob loads the worker script with
+  an `import()` call, so a missing one is reported as `failed` and not as an error in the page (WebKit); the worker
+  then says `started` when it listens, and the page holds its messages until then. Two end-to-end tests in
   `e2e/offline.spec.ts`.
 - **Decided:** a reload, not a stored copy of the names: the page stores nothing apart from the theme. One file
   runs before the page, not two, so the first paint waits for no extra request.
