@@ -30,16 +30,18 @@ The page opens on a single step: the names. Then it shows the Detect screen on t
 
 The cross at the top right of the Detect screen goes back to the names, and so does the tool's name in the header.
 
-The **i** beside *Pattern* is a short reference for every symbol the tool writes (`(?P<…>)`, `[A-Z]`, `\d`, `{2}`, `+`, `*`, `(?:…)`,
-`|`, `[^_\-.\s]`, `^`, `$`, `\`), and the two options under the pattern each have an **i** with an example.
+The **i** beside *Pattern* is a short reference for every symbol the tool writes (`(?P<…>)`, `[A-Z]`, `\d`, `{2}`,
+`+`, `*`, `(?:…)`, `|`, `[^_\-.\s]`, `^`, `$`, `\`), and the two options under the pattern each have an **i** with
+an example.
 
 Each label has a pattern style (same shape, flexible, any word, several words, seen values). *Auto* picks the
 tightest one that fits at least 95% of the names.
 
 A value that is several words in some names (`Far Red` where the others have `Blue`) is read too: the *several
 words* style is picked when enough names need it. When only an odd name or two do, they stay in the unmatched
-list; clicking one widens the label to *several words* and keeps the sample. Give the tool several names from the same folder: with a single name it has nothing
-to compare, so it proposes nothing and keeps a word such as `DAPI` as fixed text.
+list; clicking one widens the label to *several words* and keeps the sample. Give the tool several names from the
+same folder: with a single name it has nothing to compare, so it proposes nothing and keeps a word such as `DAPI` as
+fixed text.
 
 ### What counts as a name
 
@@ -64,9 +66,9 @@ served from it. No CDN, no analytics, no other third party. Two things hold that
 
 - The page carries a Content-Security-Policy: the browser refuses the requests a script makes to another host
   (to load something from it or to send something to it), from the page and from the Python worker. A policy
-  does not stop the page from going to another address: the "← All tools" link in the header and the *Source* link in the footer, or a script written to send
-  the page elsewhere. It guards against a request added by mistake or by a dependency, not against code written
-  to get round it.
+  does not stop the page from going to another address: the "← All tools" link in the header, the *Source* link in
+  the footer, or a script written to send the page elsewhere. It guards against a request added by mistake or by a
+  dependency, not against code written to get round it.
 - The end-to-end tests fail if a session asks anything of another host, or if the browser lets such a request
   through.
 
@@ -145,9 +147,9 @@ HC-Flow's module path (`app.imaging`). `metadata.py` is cut down to what Detect 
 - the two remaining unbounded caches (`_runs`, `_shape`) are bounded like the others.
 
 Their tests are the last three sections of `py/tests/test_metadata_detect.py`. The file is still a drop-in for
-HC-Flow: copying it there also needs one line in HC-Flow's `MetadataDetect.tsx`, `["words", "Several words"]` in
-`STYLES`, or the screen fails on a label whose style is `words`, and a line for `^ $` in its `GUIDE`. Until then, do not copy HC-Flow's file over this
-one: these changes would be lost.
+HC-Flow: copying it there also needs, in HC-Flow's `MetadataDetect.tsx`, `["words", "Several words"]` in `STYLES`
+(or the screen fails on a label whose style is `words`) and a line for `^ $` in `GUIDE`. Until then, do not copy
+HC-Flow's file over this one: these changes would be lost.
 
 ## Developing
 
@@ -177,6 +179,7 @@ Before a change, read these (they are written for a person or an LLM assistant):
 
 | File | What it holds |
 |---|---|
+| [`AGENTS.md`](AGENTS.md) | Where to start: what to read, the checks, the rules that are never broken |
 | [`doc/ARCHITECTURE.md`](doc/ARCHITECTURE.md) | How the tool is made: the flow, the contract between the page and Python, the engine, what is kept in step by hand, the decisions that stand |
 | [`doc/CHANGING.md`](doc/CHANGING.md) | How to make a change: the loop, the checks, where each kind of change goes, recipes, the list to go through before it is done |
 | [`doc/CHANGELOG.md`](doc/CHANGELOG.md) | What changed, newest first |
@@ -187,8 +190,8 @@ Before a change, read these (they are written for a person or an LLM assistant):
 The repo is public, so `.githooks/check-privacy.sh` keeps a personal email, a private path on a local machine and
 secrets out of every commit (identity, message and content). Turn it on once per clone:
 `git config core.hooksPath .githooks` (it then runs on commit and push). CI runs it before deploying.
-Private terms (an OS user name, a private folder name) go one per line in `~/.git-privacy-terms` or `.git/privacy-terms`.
-A line holding an invented example, such as a made-up path in a test, carries the comment marker `privacy-ok`.
+Private terms (an OS user name, a private folder name) go one per line in `~/.git-privacy-terms` or
+`.git/privacy-terms`. A line holding an invented example, such as a made-up path in a test, carries the comment marker `privacy-ok`.
 
 `.github/workflows/ci.yml` runs all of the above on every push and pull request, and publishes `dist/` to GitHub
 Pages from `main`.

@@ -34,7 +34,7 @@ npm run test:py    # Python: the engine and glue.py                     < 1 s
 npm test           # TypeScript units: names, selection                 < 1 s
 npm run lint
 npm run build      # type check, then dist/                             a few seconds
-npm run e2e        # dist/ in Chromium, Firefox and WebKit              about 30 s per browser
+npm run e2e        # dist/ in Chromium, Firefox and WebKit              about a minute per browser
 ```
 
 - **`npm run e2e` tests `dist/`.** Run `npm run build` first, every time, or it tests the previous build.
@@ -45,6 +45,10 @@ npm run e2e        # dist/ in Chromium, Firefox and WebKit              about 30
   `npx playwright install chromium firefox webkit`, and `git config core.hooksPath .githooks`.
 - A change is not done while a check fails. If a check cannot be run (a browser that is not installed), say so
   in the report.
+- Python 3.14 not installed: `uv run --python 3.14 --with pytest python -m pytest` runs the same tests.
+- Playwright says a browser executable does not exist: its browsers belong to another Playwright version. Run
+  `npx playwright install chromium firefox webkit`; where downloads are blocked, point `launchOptions.executablePath`
+  at an installed Chromium in a throwaway config, and delete it afterwards.
 - The dev server has no Content-Security-Policy; the built page has one. Something that works on `npm run dev`
   and not on `npm run preview` is usually the policy refusing it (recipe 6.11).
 
@@ -55,7 +59,8 @@ npm run e2e        # dist/ in Chromium, Firefox and WebKit              about 30
 | The pattern written for some names | `metadata_detect.py`: `core_pattern`, `analyze`, `build_pattern` | Python tests; the README if a limit moves |
 | What is proposed at the start | `suggest_fields` | Python tests |
 | What happens when the sample changes | `remap`, `widen` | Python tests; the notes shown under the name |
-| A message from Python to the user | The `ValueError` text or the `notes` in `metadata_detect.py` | Any test that asserts it |
+| A message from Python to the user | The `ValueError` text or the `notes` in `metadata_detect.py`. Only a `ValueError` reaches the user as a message: anything else is shown as a bug (`glue.run`) | Any test that asserts it |
+| How the screen waits for Python (disabled controls, dimming, focus) | `call` and the `focused` effect in `MetadataDetect.tsx`; the 400 ms rule in `detect.css` | `SLOW_MS` pair (`doc/ARCHITECTURE.md` section 10); the focus and dimming tests in `e2e/detect.spec.ts` |
 | A new pattern style | Recipe 6.1 | |
 | A new option or action on the screen | Recipe 6.2 | |
 | Something new shown from the answer | Recipe 6.3 | |

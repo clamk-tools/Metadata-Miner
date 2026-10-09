@@ -1,7 +1,8 @@
 # Architecture
 
 How MetadataMiner is made, for whoever changes it next (a person or an LLM). `README.md` says what the tool does
-for its user. `doc/CHANGING.md` says how to make a change. `doc/CHANGELOG.md` says what changed and when.
+for its user. `AGENTS.md` is where to start. `doc/CHANGING.md` says how to make a change. `doc/CHANGELOG.md`
+says what changed and when.
 
 Read sections 1 to 4 before any change. Read section 5 before touching the Python, sections 6 and 7 before
 touching the page, and section 10 before every change: it lists what has to be kept in step by hand.
@@ -52,11 +53,10 @@ answer and never builds a pattern itself.
 ## 3. Life of a session
 
 1. **Start.** `App.tsx` creates one `DetectClient` when the module loads. Its worker starts loading Pyodide
-   (from `pyodide/<version>/`, on the site itself) at once, so Python is usually ready by the time the names are. The engine status is `loading`, `ready` or
-   `failed`, read with `useSyncExternalStore`.
-2. **Names.** The paste box gives raw names. `intake()` keeps the
-   image names (sorted, each once) and counts the rest. `App.load` sends the kept names to the worker
-   (`client.setNames`) in the event handler, so they are there before the first question. It then bumps `run`,
+   (from `pyodide/<version>/`, on the site itself) at once, so Python is usually ready by the time the names are.
+   The engine status is `loading`, `ready` or `failed`, read with `useSyncExternalStore`.
+2. **Names.** The paste box gives raw names. `intake()` keeps the image names (sorted, each once) and counts the
+   rest. `App.load` sends the kept names to the worker (`client.setNames`) in the event handler, so they are there before the first question. It then bumps `run`,
    the React `key` of the Detect screen: each set of names gets a fresh screen.
 3. **First answer.** `MetadataDetect` mounts and asks `{ suggest: true }`.
 4. **An edit.** Every action on the screen calls `call(patch)`, which sends
@@ -150,8 +150,10 @@ A style chosen by hand sets `auto` to false and sticks.
 4. Apply at most one action, in this order of priority: `suggest`, `add`, `remove`, `rename`, `edit`.
 5. `analyze`: for each field, where it sits, what the other names hold there, the pattern of every style, how
    many names each style reads, the style `auto` picks.
-6. `build_pattern`: the fields as named groups, with the unlabeled text between and around them (5.5).
-7. Compile the pattern (`metadata.compile_pattern`) and read every name with it (`extract_metadata`, a `search`,
+6. `build_pattern`: the fields as named groups, with the unlabeled text between and around them (5.5). With
+   *Anchor* on, tied to the start (`^`) or both ends (`$`) of the name if it would misread the sample.
+7. `misread`: a note for each field the pattern still reads somewhere else in the sample.
+8. Compile the pattern (`metadata.compile_pattern`) and read every name with it (`extract_metadata`, a `search`,
    not a full match). From that: matched and unmatched names, the preview rows, each field's values, type and hint.
 
 ### 5.4 When the sample changes
@@ -179,8 +181,9 @@ Both return notes, shown under the sample name.
 
 ### 5.6 The proposal (`suggest_fields`)
 
-For each part whose text varies across the names: if its values look like a known thing (a well, `s1`, `t1`, `z1`,
-`plate1`, `w1`), the whole part gets that label; a part with at most 12 different word-like values is a Channel.
+For each part whose text varies across the names: if 95% of its values look like a known thing (`B03` a Well,
+`s1`/`f1` a Site, `t1` a Time, `z1` a Z, `plate1`/`p1` a Plate, `w1`/`c1` a Channel), the whole part gets that
+label; otherwise a part with at most 12 different word-like values is a Channel.
 Otherwise each varying run is labeled on its own: Row for a letter A to P, the label of the word before it
 (`_ALIAS`: `fld 4` is a Field), Column for digits after one capital, else `Part1`, `Part2`. A run where almost
 every name has its own value is an identifier and is skipped. A candidate that always changes together with one
