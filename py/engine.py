@@ -889,6 +889,7 @@ def detect(
         "total": len(names),
         "tokens": tokens(ctx.sample),
         "fields": out_fields,
+        "styles": {mode: MODE_LABEL[mode] for mode in MODES},
         "pattern": pattern,
         "pieces": [{"text": text, "field": field} for text, field in pieces],
         "matched": len(matched),

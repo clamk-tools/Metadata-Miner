@@ -29,20 +29,13 @@ that name. It should read `Far Red`."
 
 ## 3. The checks
 
-```
-npm run test:py    # Python: the engine and glue.py                     < 1 s
-npm test           # TypeScript units: names, selection                 < 1 s
-npm run lint
-npm run build      # type check, then dist/                             a few seconds
-npm run e2e        # dist/ in Chromium, Firefox and WebKit              about a minute per browser
-```
+The five commands are in `AGENTS.md` (*Checks*), and the first-time setup in the README (*Developing*). The first
+three take a second each, the build a few seconds, the end-to-end tests about a minute per browser.
 
 - **`npm run e2e` tests `dist/`.** Run `npm run build` first, every time, or it tests the previous build.
 - While working, run one browser and one test:
   `npx playwright test --project=chromium -g "part of the test's title"`. Run all three browsers before finishing.
 - A failed end-to-end test leaves a trace in `test-results/`: `npx playwright show-trace <path to trace.zip>`.
-- First time on a machine: `npm install`, `pip install -r requirements-dev.txt`,
-  `npx playwright install chromium firefox webkit`, and `git config core.hooksPath .githooks`.
 - A change is not done while a check fails. If a check cannot be run (a browser that is not installed), say so
   in the report.
 - Python 3.14 not installed: `uv run --python 3.14 --with pytest python -m pytest` runs the same tests.
@@ -80,7 +73,7 @@ npm run e2e        # dist/ in Chromium, Firefox and WebKit              about a 
 | Anything the user can see or that changes a limit | `README.md` (*Using it*, *Known limits*) |
 | Every change | A line in `doc/CHANGELOG.md` |
 | A file added, moved or given a new role; the flow or the contract changed | `doc/ARCHITECTURE.md` (sections 2 to 9) |
-| A new pair that has to be kept in step by hand | `doc/ARCHITECTURE.md` section 10 |
+| A new pair that has to be kept in step | `doc/ARCHITECTURE.md` section 10: a test in `test/pairs.test.ts` (10.1) when one can hold it, else a line in 10.2 |
 | A decision made or reversed | `doc/ARCHITECTURE.md` section 11 |
 | A new kind of change that took some finding | A recipe here |
 
@@ -93,12 +86,11 @@ name in any file: the privacy guard refuses the commit (README, *Publishing safe
 
 1. `engine.py`: add it to `MODES` (the order is from tightest to loosest: `remap` and `widen` use it as
    a rank), to `MODE_LABEL`, and to `core_pattern`. Add it to `AUTO_ORDER` only if *Auto* may pick it.
-2. `FieldCard.tsx`: add `["key", "Label"]` to `STYLES`. Without it the field card crashes on that style.
-3. If the style writes syntax the tool did not write before, add it to `GUIDE` in `help.tsx` and to the
+2. If the style writes syntax the tool did not write before, add it to `GUIDE` in `help.tsx` and to the
    symbol list in the README.
-4. Tests: Python (the pattern, what *Auto* picks, how many names it covers), and one end-to-end test that picks
-   the style in the select.
-5. README: the list of styles under *Using it*.
+3. Tests: Python (the pattern, what *Auto* picks, how many names it covers), and one end-to-end test that picks
+   the style in the select. The page needs no change: the answer's `styles` lists it.
+4. README: the list of styles under *Using it*.
 
 ### 6.2 A new option or action
 
@@ -106,10 +98,11 @@ An option is sent with every request (`generalize`, `anchor`). An action is sent
 `edit`, `suggest`).
 
 1. `detect()`: a keyword argument with a default that keeps today's behaviour.
-2. `glue.run`: read the key from the request and pass it. A key missing here is dropped without an error.
+2. `glue.run`: read the key from the request and pass it. A key missing here is dropped without an error
+   (`test/pairs.test.ts` catches it).
 3. `contract.ts`: the field in `DetectRequest`.
-4. `DetectScreen.tsx`: an option goes in the `options` state and `setOption`; an action is a
-   `call({ … })` from its control.
+4. The page: an option goes in `Options` and gets its checkbox in `PatternOptions.tsx` (`DetectScreen.tsx` sends
+   the options with every request); an action is a `call({ … })` from its control in `src/detect/`.
 5. Tests: `test_engine.py`, `test_glue.py` (`test_run_takes_the_options…`), and an end-to-end test.
 6. If the option has a checkbox, give it an "i" bubble with a worked example, like the two that exist.
 
@@ -143,11 +136,11 @@ beside them.
 1. Read `doc/LLMfeed_VISUAL-IDENTITY.md`. It gives the tokens, the sizes and what must stay the same across the
    Clamk tools.
 2. A colour, a radius or a font is a token in `theme.css`. Dark values are written twice there: change both
-   blocks. Use tokens in `app.css` and `detect.css`, never a colour literal.
+   blocks (`npm test` fails until they agree). Use tokens in `app.css` and `detect.css`, never a colour literal.
 3. A control's look (button, input, select) is in `theme.css`; reuse the variants before adding one.
 4. Check light and dark, a narrow window (the layout stacks under 860 px), keyboard focus, and
    `prefers-reduced-motion`.
-5. If `--bg` changes, update `DARK` and `LIGHT` in `e2e/detect.spec.ts`.
+5. If `--bg` changes, update `DARK` and `LIGHT` in `e2e/detect.spec.ts` (`npm test` says so).
 6. A seventh field colour needs a `.g6` in `detect.css`, its tokens in `theme.css` (light and both dark blocks),
    and `COLORS` changed in `DetectScreen.tsx`.
 
@@ -157,11 +150,11 @@ beside them.
    the package (`pyodideRuntime` in `vite.config.ts`) and puts it in `pyodide/<version>/`; the worker reads the
    same version from the package. Nothing else names the version.
 2. If the Python minor version changes: `python-version` in `.github/workflows/ci.yml`, and "Needs Node … and
-   Python …" in the README.
+   Python …" in the README (`npm test` fails until both say it).
 3. Run everything, including the end-to-end tests in the three browsers. If Python does not load, the new
    version fetches a file that `PYODIDE_FILES` in `vite.config.ts` does not list: the browser's network tab on
    `npm run preview` shows the 404.
-4. If the download size changed noticeably, update "about 6 MB" in `App.tsx` and in the README.
+4. If the download size changed noticeably, update "about 6 MB" in `PythonStatus.tsx` and in the README.
 
 ### 6.8 The repository name or the site's path
 

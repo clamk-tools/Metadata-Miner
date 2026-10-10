@@ -6,10 +6,12 @@ import type { DetectClient } from "../python/client";
 import type { DetectAnswer, DetectRequest } from "../python/contract";
 import { copyText } from "./clipboard";
 import { FieldCard } from "./FieldCard";
-import { Example, ExampleCase, Info, RegexGuide } from "./help";
+import { Info, RegexGuide } from "./help";
 import { Cross, Icon } from "./icons";
 import { LabelPicker } from "./LabelPicker";
 import { MatchRows, MatchSummary } from "./Matches";
+import { PatternOptions } from "./PatternOptions";
+import type { Options } from "./PatternOptions";
 import { SampleName } from "./SampleName";
 import { cluster, clusters, snap } from "./selection";
 import type { Range } from "./selection";
@@ -39,7 +41,7 @@ function reason(e: unknown): string {
 // sends them back.
 export function DetectScreen({ client, starting, onClose }: Props) {
   const [answer, setAnswer] = useState<DetectAnswer | null>(null);
-  const [options, setOptions] = useState({ generalize: true, anchor: true });
+  const [options, setOptions] = useState<Options>({ generalize: true, anchor: true });
   const [busy, setBusy] = useState(true);
   const [slow, setSlow] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +119,7 @@ export function DetectScreen({ client, starting, onClose }: Props) {
     if (target !== now) (usable(target) ? target : screen).focus({ preventScroll: true });
   }, [busy]);
 
-  const setOption = (name: "generalize" | "anchor", value: boolean) => {
+  const setOption = (name: keyof Options, value: boolean) => {
     const next = { ...options, [name]: value };
     setOptions(next);
     void call({}, next);
@@ -301,34 +303,7 @@ export function DetectScreen({ client, starting, onClose }: Props) {
                     ))
                   )}
                 </div>
-                <div className="dt-opts">
-                  <div className="dt-opt-row">
-                    <label className="dt-opt">
-                      <input type="checkbox" checked={options.anchor} disabled={busy} onChange={(e) => setOption("anchor", e.target.checked)} />
-                      Anchor with the neighbouring part on each side
-                    </label>
-                    <Info id="dt-help-anchor" label="What anchoring does">
-                      Adds the text just before and just after your labels to the pattern, so it can only match in the right place in the name.
-                      <Example label="Channel" before="plate1_B03_s2_w1_" hit="DAPI" after=".tif">
-                        <ExampleCase on pattern={String.raw`w\d+_(?P<Channel>[A-Za-z0-9]+)`} result="reads DAPI, GFP, Cy5: correct" />
-                        <ExampleCase on={false} pattern={String.raw`(?P<Channel>[A-Za-z0-9]+)`} result="reads plate1: wrong place" />
-                      </Example>
-                    </Info>
-                  </div>
-                  <div className="dt-opt-row">
-                    <label className="dt-opt">
-                      <input type="checkbox" checked={options.generalize} disabled={busy} onChange={(e) => setOption("generalize", e.target.checked)} />
-                      Allow fixed text to vary in its numbers
-                    </label>
-                    <Info id="dt-help-numbers" label="What letting the numbers vary does">
-                      Writes the numbers you did not label as “any number”, so w1 also matches w2 and w3. Untick it to keep them exactly as in the sample name.
-                      <Example label="Well" before="plate1_" hit="B03" after="_s2_w1_DAPI.tif" note="432 names: 2 plates, 3 sites.">
-                        <ExampleCase on pattern={String.raw`plate\d+_(?P<Well>[A-Z]\d{2})_s\d+`} result="matches all 432 names" />
-                        <ExampleCase on={false} pattern={String.raw`plate1_(?P<Well>[A-Z]\d{2})_s2`} result="matches 72 names: plate 1, site 2 only" />
-                      </Example>
-                    </Info>
-                  </div>
-                </div>
+                <PatternOptions options={options} busy={busy} onChange={setOption} />
               </div>
             </section>
 
@@ -347,6 +322,7 @@ export function DetectScreen({ client, starting, onClose }: Props) {
                 <FieldCard
                   key={f.name}
                   field={f}
+                  styles={answer.styles}
                   color={i % COLORS}
                   busy={busy}
                   onRename={(to) => void call({ rename: { from: f.name, to } })}

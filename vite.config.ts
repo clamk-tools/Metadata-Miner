@@ -73,5 +73,5 @@ export default defineConfig({
   plugins: [react(), pyodideRuntime(), contentSecurityPolicy()],
   worker: { format: "es" },
   optimizeDeps: { exclude: ["pyodide"] },
-  test: { include: ["src/**/*.test.ts"] },
+  test: { include: ["src/**/*.test.ts", "test/**/*.test.ts"] },
 });

@@ -3,21 +3,14 @@ import { useState } from "react";
 import type { DetectField } from "../python/contract";
 import { Cross } from "./icons";
 
-// The pattern styles, tightest first: the keys of MODES in py/engine.py. A style missing here crashes the card.
-const STYLES: [string, string][] = [
-  ["shape", "Same shape"],
-  ["flex", "Flexible"],
-  ["word", "Any word"],
-  ["words", "Several words"],
-  ["list", "Seen values"],
-];
-const STYLE_LABEL = Object.fromEntries(STYLES);
+const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 // One labeled field, a card: its name (editable) with what it selects, the pattern style in use with how many names each
 // style fits, and what it reads from the matched names. The cross beside its name removes it. The card is keyed by the
 // field's name, so a rename that went through shows the new name and one that was refused keeps what was typed.
 export function FieldCard({
   field,
+  styles,
   color,
   busy,
   onRename,
@@ -26,6 +19,7 @@ export function FieldCard({
   onRemove,
 }: {
   field: DetectField;
+  styles: Record<string, string>; // from Python, tightest first
   color: number;
   busy: boolean;
   onRename: (to: string) => void;
@@ -69,11 +63,11 @@ export function FieldCard({
       </div>
       <select value={field.auto ? "auto" : field.mode} disabled={busy} aria-label={`Pattern style of ${field.name}`} onChange={(e) => onMode(e.target.value)}>
         <option value="auto">
-          Auto ({STYLE_LABEL[field.fit].toLowerCase()}) · {field.covers[field.fit]}/{field.total}
+          Auto ({styles[field.fit]}) · {field.covers[field.fit]}/{field.total}
         </option>
-        {STYLES.map(([style, styleLabel]) => (
+        {Object.entries(styles).map(([style, styleLabel]) => (
           <option key={style} value={style}>
-            {styleLabel} · {field.covers[style]}/{field.total}
+            {capital(styleLabel)} · {field.covers[style]}/{field.total}
           </option>
         ))}
       </select>

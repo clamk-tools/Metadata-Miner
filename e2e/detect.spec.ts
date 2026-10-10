@@ -329,6 +329,7 @@ test("a value that is two words in some names is read, and the odd name left wid
   // Far Red is in 4 names of 24: the proposed Channel reads several words, and every name matches
   await expect(page.getByTestId("matched")).toHaveText("Matched 24 of 24 names");
   await expect(page.getByLabel("Pattern style of Channel")).toContainText("Auto (several words) · 24/24");
+  await expect(page.getByLabel("Pattern style of Channel").locator("option[value=words]")).toHaveText("Several words · 24/24"); // names from Python
 
   // Texas Red is in one name: labeled as "any word", the filter leaves that name out
   await page.getByLabel("Pick a part").getByRole("button", { name: "FITC" }).click();

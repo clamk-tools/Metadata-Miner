@@ -119,11 +119,12 @@ runtime comes from the `pyodide` npm package and is published with the site, in 
 |---|---|
 | `py/engine.py` | The engine: writes the pattern |
 | `py/glue.py` | What the page calls: keeps the names, runs one step of Detect, answers in JSON |
-| `src/python/` | The page's side of Python: the worker that runs Pyodide, the client that talks to it, the messages between them |
+| `src/python/` | The page's side of Python: the worker that runs Pyodide, the client that talks to it, the messages between them, what the page says while it loads or fails |
 | `src/names/` | The names step: the paste box, and names from pasted text |
 | `src/detect/` | The Detect screen and its parts |
 | `src/theme/` | Light or dark: the system setting, the switch, the stored choice |
 | `src/App.tsx` | The page around them: the frame (header, footer), the notices |
+| `test/` | Checks that values written in two files still agree |
 | `src/styles/` | The look: `theme.css` holds the tokens and the controls, `app.css` the page, `detect.css` the Detect screen |
 | `vite.config.ts` | The build: puts the Pyodide runtime in `pyodide/`, writes the page's Content-Security-Policy |
 
@@ -142,16 +143,12 @@ npx playwright install chromium firefox webkit
 
 npm run dev        # the page, at http://localhost:5173
 npm run test:py    # Python tests: the engine and glue.py
-npm test           # TypeScript unit tests
+npm test           # TypeScript unit tests, and the values kept in step across files
 npm run lint
 npm run build      # type check, then build into dist/
 npm run preview    # dist/ at http://localhost:4173/ez.Regex/, the path it has on GitHub Pages
 npm run e2e        # end-to-end tests of dist/ in three browsers (build first)
 ```
-
-The end-to-end tests run on `npm run preview`, and assert the same pattern string as the Python tests for the same
-plate of names, so the browser and plain Python are held to one answer. The Content-Security-Policy is in the
-built page only: the dev server runs without it.
 
 ### Changing it
 

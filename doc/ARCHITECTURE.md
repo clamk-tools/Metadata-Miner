@@ -4,9 +4,6 @@ How ez.Regex (formerly MetadataMiner) is made, for whoever changes it next (a pe
 for its user. `AGENTS.md` is where to start. `doc/CHANGING.md` says how to make a change. `doc/CHANGELOG.md`
 says what changed and when.
 
-Read sections 1 to 4 before any change. Read section 5 before touching the Python, sections 6 and 7 before
-touching the page, and section 10 before every change: it lists what has to be kept in step by hand.
-
 ## 1. In one paragraph
 
 A static page (React, built by Vite, served by GitHub Pages) with no backend. The user gives file names. The page
@@ -35,11 +32,12 @@ answer and never builds a pattern itself.
 | `src/python/worker.ts` | Loads Pyodide and the Python files; answers requests one at a time, in order |
 | `src/python/client.ts` | The page's side of the worker: starts it (from a blob, section 9), engine status, `setNames`, `detect`, `restart` |
 | `src/python/contract.ts` | The contract: the request, the answer, the worker messages |
-| `src/App.tsx` | The frame (rail, header, footer), the names step or the Detect screen, the notices, the guard that ignores a dropped file |
+| `src/python/PythonStatus.tsx` | What the page says while Python loads, and when it fails: why, and what helps |
+| `src/App.tsx` | The frame (rail, header, footer), the names step or the Detect screen, the guard that ignores a dropped file |
 | `src/names/NamesInput.tsx` | The names step: the paste box |
 | `src/names/names.ts` | Names from pasted text: the file name of each line, sorted, each once |
 | `src/detect/DetectScreen.tsx` | The Detect screen: its state, the requests to Python, the layout |
-| `src/detect/SampleName.tsx`, `LabelPicker.tsx`, `FieldCard.tsx`, `Matches.tsx` | Its parts: the sample name, the label choices, one card per field, what the pattern reads |
+| `src/detect/SampleName.tsx`, `LabelPicker.tsx`, `FieldCard.tsx`, `PatternOptions.tsx`, `Matches.tsx` | Its parts: the sample name, the label choices, one card per field, the two options, what the pattern reads |
 | `src/detect/help.tsx`, `icons.tsx` | The "i" bubbles (the symbol guide, the worked examples); the line icons |
 | `src/detect/selection.ts` | A click or a drag on the sample name, turned into the stretch to label |
 | `src/detect/clipboard.ts` | Copy, with a fallback when the browser refuses |
@@ -48,7 +46,7 @@ answer and never builds a pattern itself.
 | `index.html` | The page shell; loads `boot.js` ahead of everything else |
 | `public/boot.js` | Before the page's own script: applies the stored theme, and says so when the page's own files are missing (a page opened before a release) |
 | `vite.config.ts` | The build, and two plugins of its own: the Pyodide runtime put in `pyodide/<version>/`, the Content-Security-Policy written into the built page |
-| `py/tests/`, `src/**/*.test.ts`, `e2e/` | The tests (section 8) |
+| `py/tests/`, `src/**/*.test.ts`, `test/`, `e2e/` | The tests (section 8) |
 | `.github/workflows/ci.yml`, `.githooks/` | CI and deploy; the privacy guard |
 
 ## 3. Life of a session
@@ -109,6 +107,7 @@ Notes on the answer:
   `prefix`, `auto`, `mode`; see `Field.to_wire`) and what Python worked out for display (`start`, `end`, `text`,
   `pattern`, `covers`, `fit`, ...). Python ignores the second group when the fields come back.
 - `tokens` is the sample name cut into runs and separators. Selection snaps to it.
+- `styles` is every pattern style, tightest first, with its name: the field card's choices come from it.
 - `pieces` is the pattern in order, each piece tagged with its field, so the screen can colour the groups.
   `pattern` is the same pieces joined.
 - `unmatched` and `rows` hold the first 8 only (`PREVIEW_ROWS`); `fields[*].values` the first 8 distinct values
@@ -264,6 +263,7 @@ every Clamk tool share that key and the same origin, so the choice holds across 
 | Engine | `py/tests/test_engine.py` | `npm run test:py` | `detect()`: proposal, labeling, styles, sample change, options, the answer |
 | Glue | `py/tests/test_glue.py` | `npm run test:py` | `set_names`, `run`, the two kinds of failure |
 | Units | `src/names/names.test.ts`, `src/detect/selection.test.ts` | `npm test` | Names from pasted text; click and drag selection |
+| Pairs | `test/pairs.test.ts` | `npm test` | The pairs of section 10.1 |
 | End to end | `e2e/detect.spec.ts`, `e2e/offline.spec.ts`, `e2e/network.spec.ts` | `npm run e2e` | The built site in Chromium, Firefox and WebKit, with the real Pyodide |
 
 - `test_engine.py` is grouped by topic (suggesting, labeling, styles, sample change, options, the answer, values in
@@ -321,30 +321,47 @@ every Clamk tool share that key and the same origin, so the choice holds across 
   **A push to `main` is a release.**
 - CI runs the Python tests on the Python version Pyodide ships (3.14 for `pyodide` 314.x).
 
-## 10. Kept in step by hand
+## 10. Kept in step
 
-Nothing checks these pairs. When one side changes, change the other.
+The same thing is written in two places. When one side changes, change the other.
+
+### 10.1 Checked by a test
+
+`test/pairs.test.ts` (run by `npm test`) fails when these differ. It reads the files as text, so a pair renamed or
+moved needs its line there changed too.
+
+| One side | Other side |
+|---|---|
+| `detect()` arguments | `glue.run`, `DetectRequest` in `contract.ts` (a key missing from `glue.run` would be dropped silently) |
+| Six field colours: `.g0` to `.g5` in `detect.css` | `COLORS` in `DetectScreen.tsx` |
+| `SLOW_MS` (400) in `DetectScreen.tsx` | The 400 ms delay of the dimmed controls in `detect.css` |
+| Dark tokens under the media query | Dark tokens under `[data-theme="dark"]` (both in `theme.css`) |
+| `--bg` in `theme.css`, light and dark | `LIGHT`, `DARK` in `e2e/detect.spec.ts` |
+| `clamk-tools:theme` in `theme/theme.ts` | The same key in `public/boot.js` |
+| The plate pattern and `WORDS` in `test_engine.py` | `PLATE_PATTERN` and `WORDS` in `e2e/detect.spec.ts` |
+| `pyodide` version in `package.json` | `python-version` in `ci.yml`; "Needs … Python" in the README |
+| `'wasm-unsafe-eval'` in the policy (`vite.config.ts`) | The text taken out in `e2e/offline.spec.ts` |
+
+The pattern styles are not a pair any more: the answer carries them (`styles`), from `MODES` and `MODE_LABEL` in
+`engine.py`, and the field card lists what it is given.
+
+### 10.2 Kept by hand
+
+Nothing checks these: a test would cost more than it saves, or the other side is outside the repository.
 
 | One side | Other side | If they differ |
 |---|---|---|
-| `detect()` arguments | `glue.run`, `DetectRequest` in `contract.ts` | The new key is ignored, silently |
 | `detect()` answer | `DetectAnswer`, `DetectField` in `contract.ts` | TypeScript shows a field that is not there |
-| `MODES`, `MODE_LABEL` in `engine.py` | `STYLES` in `FieldCard.tsx` | The field card crashes on a style it does not know |
 | Syntax the engine can write | `GUIDE` in `help.tsx`, the symbol list in the README | The "i" beside *Pattern* is incomplete |
-| The plate pattern in `test_engine.py` | `PLATE_PATTERN` and `WORDS` in `e2e/detect.spec.ts` | One of the two suites fails |
-| Six field colours: `.g0` to `.g5` in `detect.css` | `COLORS` in `DetectScreen.tsx` | A seventh field has no colour |
-| `SLOW_MS` (400) in `DetectScreen.tsx` | The 400 ms delay of the dimmed controls in `detect.css`; "0.4 s" in the README | "Working…" and the dimming do not show together |
-| Dark tokens under the media query | Dark tokens under `[data-theme="dark"]` | Dark differs between "system" and "chosen" |
-| `--bg` in `theme.css` | `DARK`, `LIGHT` in `e2e/detect.spec.ts` | The theme tests fail |
-| `pyodide` version in `package.json` | `python-version` in `ci.yml`; "Needs … Python" in the README | Tests run on another Python than the one shipped |
-| Tool name `ez.Regex` and its tagline | `index.html` (title, description, noscript), the header and the "newer version" messages in `App.tsx` and `public/boot.js`, `e2e/`, the README | The page, the tests and the docs name different tools |
+| "0.4 s" in the README | `SLOW_MS` | The README promises another delay |
+| Tool name `ez.Regex` and its tagline | `index.html` (title, description, noscript), the header in `App.tsx`, the "newer version" messages in `PythonStatus.tsx` and `public/boot.js`, `e2e/`, the README | The page, the tests and the docs name different tools |
 | Repository name `ez.Regex` | `preview` script, `playwright.config.ts`, the footer link in `App.tsx`, the README | Preview and tests use a path the site does not have |
-| `clamk-tools:theme` in `theme/theme.ts` | The same key in `public/boot.js`; the hub | The theme flashes, or is not shared |
+| `clamk-tools:theme` | The hub and the other Clamk tools | The theme is not shared |
 | Texts and labels on the page | The locators in `e2e/`; the words quoted in the README | Tests fail; the README describes another page |
-| "About 6 MB" and the measured times | `App.tsx` message, README "Known limits" | The page promises what is no longer true |
+| "About 6 MB" and the measured times | `PythonStatus.tsx`, README "Known limits" | The page promises what is no longer true |
+| The browser versions that run the policy | `PythonStatus.tsx` and the README | The page names the wrong versions |
 | `PYODIDE_FILES` in `vite.config.ts` | The files `loadPyodide` fetches at the pinned `pyodide` version; `pyodide.asm.wasm` in `e2e/network.spec.ts` | Python does not load: every end-to-end test fails |
 | `pyodide/<version>/` in `vite.config.ts` | `../pyodide/${version}/` in `python/worker.ts`; the routes in `e2e/offline.spec.ts`; the address looked for in `e2e/network.spec.ts` | Python does not load; the offline tests block nothing; the network test does not see Python's requests |
-| `'wasm-unsafe-eval'` in the policy (`vite.config.ts`) | The text taken out in `e2e/offline.spec.ts`; the browser versions named in `App.tsx` and the README | The refused-browser test fails; the page names the wrong versions |
 | A worker starts from a blob (`client.ts`) | Every other `new Worker` added later | A worker from a file is not held to the policy; `e2e/network.spec.ts` fails if it starts during its session |
 | The policy in `vite.config.ts` | What the built page loads (scripts, styles, fonts, images, workers) | The browser refuses the new thing, in the build only: the dev server has no policy |
 

@@ -327,6 +327,8 @@ def test_the_answer_describes_the_sample_each_field_and_what_the_folder_gives():
     assert (well["start"], well["end"], well["text"]) == (7, 10, "B03")
     assert well["distinct"] == 24 and well["type"] == "well" and well["values"][:2] == ["A01", "A02"]
     assert _fields(result)["Site"]["type"] == "int" and _fields(result)["Site"]["values"] == ["1", "2", "3"]
+    assert list(result["styles"]) == ["shape", "flex", "word", "words", "list"]  # tightest first: the page lists them so
+    assert result["styles"]["words"] == "several words" and set(well["covers"]) == set(result["styles"])
 
     assert "".join(p["text"] for p in result["pieces"]) == result["pattern"]
     assert [p["field"] for p in result["pieces"] if p["field"]] == ["Plate", "Well", "Site", "Channel"]

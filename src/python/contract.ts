@@ -43,6 +43,7 @@ export interface DetectAnswer {
   total: number;
   tokens: DetectToken[]; // the sample cut into letter/digit groups and separators: what a selection snaps to
   fields: DetectField[];
+  styles: Record<string, string>; // every pattern style, tightest first, with its name (lower case): what a field card offers
   pattern: string; // "" until something is labeled
   pieces: { text: string; field: string | null }[]; // the pattern in order, each group tagged with its field
   matched: number;

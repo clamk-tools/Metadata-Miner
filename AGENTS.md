@@ -19,8 +19,8 @@ named-group regular expression for all of them. There is no backend.
 npm run test:py && npm test && npm run lint && npm run build && npm run e2e
 ```
 
-`npm run e2e` tests `dist/`, so build first. Fixes for a missing Python 3.14 or Playwright browser:
-`doc/CHANGING.md` section 3. Say which checks were not run.
+`npm run e2e` tests `dist/`, so build first. Setup: README, *Developing*. Fixes for a missing Python 3.14 or
+Playwright browser: `doc/CHANGING.md` section 3. Say which checks were not run.
 
 ## Never
 
