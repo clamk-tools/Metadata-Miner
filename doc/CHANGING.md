@@ -72,7 +72,7 @@ three take a second each, the build a few seconds, the end-to-end tests about a 
 
 | When | Update |
 |---|---|
-| Anything the user can see or that changes a limit | `README.md` (*Using it*, *Known limits*) |
+| Anything the user can see or that changes a limit | `README.md` (*How to use it*, *Known limits*) |
 | Every change | A line in `doc/CHANGELOG.md` |
 | A file added, moved or given a new role; the flow or the contract changed | `doc/ARCHITECTURE.md` (sections 2 to 9) |
 | A new pair that has to be kept in step | `doc/ARCHITECTURE.md` section 10: a test in `test/pairs.test.ts` (10.1) when one can hold it, else a line in 10.2 |
@@ -92,7 +92,7 @@ name in any file: the privacy guard refuses the commit (README, *Publishing safe
    symbol list in the README.
 3. Tests: Python (the pattern, what *Auto* picks, how many names it covers), and one end-to-end test that picks
    the style in the select. The page needs no change: the answer's `styles` lists it.
-4. README: the list of styles under *Using it*.
+4. README: the table of choices under *How to use it*, *Fine-tuning*.
 
 ### 6.2 A new option or action
 

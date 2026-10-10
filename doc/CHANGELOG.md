@@ -11,6 +11,14 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-10 · A step-by-step guide in the README
+
+- **Seen:** nothing changes on the page. The README's *Using it* is now *How to use it*: the steps in short, then
+  each step in detail (getting the names out of Windows or a Mac, checking labels, checking what is read, where the
+  pattern goes in CellProfiler), a worked example, the fine-tuning options with what each choice reads, and what to
+  do when something looks wrong.
+- **Inside:** `README.md`; `doc/CHANGING.md` points to the new section names.
+
 ### 2026-10-10 · Fewer things to keep in step by hand
 
 - **Seen:** nothing changes on the page.

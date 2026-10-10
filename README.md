@@ -19,32 +19,129 @@ That is a Python regular expression with named groups (CellProfiler's convention
 The tool is one of the [Clamk Tools](https://clamk-tools.github.io/). It runs entirely in the browser. It was called
 MetadataMiner until 2026-10-10, at `clamk-tools.github.io/Metadata-Miner/` (that address no longer works).
 
-## Using it
+## How to use it
 
-The page opens on a single step: the names. Then it shows the Detect screen on them.
+You need a list of your image file names. Nothing else: the files themselves are never opened or uploaded.
 
-1. **Paste your names**, one per line (full paths work, the file name is kept). In Windows Explorer, select the
-   files and use *Copy as path*, then paste here.
-2. **Check the labels.** The tool proposes labels from what varies across the names. To change them, drag across
-   the sample name, click a part of it, or use the **Or pick a part** buttons, then choose what the part is.
-3. **Check what it reads.** The table shows the values read from the first names. Names the pattern does not match
-   are listed: click one to use it as the sample, and the pattern widens to fit it.
-4. **Copy this pattern**, and paste it where you need it.
+### In short
 
-The cross at the top right of the Detect screen goes back to the names, and so does the tool's name in the header.
+1. Paste your file names and press **Use these names**.
+2. The tool guesses which parts are the plate, the well, the site, the channel. Check the coloured labels.
+3. Check the table: does each name give the right values?
+4. Press **Copy this pattern** and paste it into your analysis software.
 
-The **i** beside *Pattern* is a short reference for every symbol the tool writes (`(?P<…>)`, `[A-Z]`, `\d`, `{2}`,
-`+`, `*`, `(?:…)`, `|`, `[^_\-.\s]`, `^`, `$`, `\`), and the two options under the pattern each have an **i** with
-an example.
+The rest of this section explains each step.
 
-Each label has a pattern style (same shape, flexible, any word, several words, seen values). *Auto* picks the
-tightest one that fits at least 95% of the names.
+### Step 1 · Get your file names
 
-A value that is several words in some names (`Far Red` where the others have `Blue`) is read too: the *several
-words* style is picked when enough names need it. When only an odd name or two do, they stay in the unmatched
-list; clicking one widens the label to *several words* and keeps the sample. Give the tool several names from the
-same folder: with a single name it has nothing to compare, so it proposes nothing and keeps a word such as `DAPI` as
-fixed text.
+Copy the names of the image files, from one experiment or one folder.
+
+- **Windows**: in File Explorer, select the files, right-click and choose **Copy as path** (on Windows 10, hold
+  Shift while you right-click). The full paths are fine: the tool keeps only the file name.
+- **Mac**: in Finder, select the files and press **Option + Command + C** (copies their paths).
+- **Anything else**: a list of names typed or copied from a spreadsheet works too, one name per line.
+
+Give it several names, the more the better (a whole folder is fine, even thousands). The tool learns from what
+changes between the names, so it needs names that differ: different wells, sites and channels.
+
+### Step 2 · Paste them
+
+Paste into the box under **Paste the names, one per line**, then press **Use these names**.
+
+The first time, the page downloads its Python engine (about 6 MB, a few seconds). The browser keeps it, so the next
+visits start at once. You can paste while it loads.
+
+### Step 3 · Check the labels
+
+The screen shows one of your names large: the **sample name**. The tool has already put coloured labels on the
+parts that change between names, and named them (Plate, Well, Site, Channel...).
+
+- **A label is right**: leave it.
+- **A label is wrong or not wanted**: click the small cross on it.
+- **A part has no label**: click it in the sample name (or drag across several characters, or use the buttons under
+  **Or pick a part**). Then choose what it is: one of the buttons (Plate, Well, Row, Column, Site, Field, Channel,
+  Filter, Laser, Time, Date, Z), or type your own name in **Other name** and press **Add**.
+- **A label has the wrong name**: on its card, on the right, click the name and type a new one.
+- **Start again**: **Suggest again** brings back the tool's guess; **Clear all** removes every label.
+
+The arrows beside **1 · Sample name** show another of your names as the sample, if that one is easier to label.
+
+### Step 4 · Check what it reads
+
+Under **3 · What the pattern reads**, the page says how many names the pattern reads (**Matched 432 of 432 names**)
+and shows a table of the first ones, with the value of each label.
+
+- **Every name matched, and the values are right**: go to step 5.
+- **Some names are not matched**: they are listed as buttons. Click one: the pattern is widened to fit it too
+  (a value in several words, such as `Far Red` where the others have `Blue`, switches that label to *Several
+  words*). Repeat until every name you need is matched.
+
+### Step 5 · Copy the pattern
+
+Press **Copy this pattern**, then paste it where your software asks for a regular expression. In CellProfiler: the
+*Metadata* module, with metadata extracted from the file name, in the field *Regular expression to extract from
+file name*.
+
+### A worked example
+
+These six names:
+
+```
+plate1_B03_s1_w1_DAPI.tif
+plate1_B03_s1_w2_GFP.tif
+plate1_B03_s2_w1_DAPI.tif
+plate1_B04_s1_w1_DAPI.tif
+plate1_B04_s2_w2_GFP.tif
+plate2_C10_s1_w1_DAPI.tif
+```
+
+get four labels at once, with no click: Plate, Well, Site and Channel. All six names are matched, and the pattern is
+
+```
+(?P<Plate>plate\d+)_(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)_w\d+_(?P<Channel>[A-Z]+)
+```
+
+From `plate1_B03_s2_w1_DAPI.tif` it reads Plate `plate1`, Well `B03`, Site `2`, Channel `DAPI`. The `w1` part
+changes too, but follows the channel, so it is not given a label of its own.
+
+### Fine-tuning (optional)
+
+Most of the time the tool's choices are right. If not:
+
+- **How strict a label is.** Each label's card has a menu. *Auto*, the default, picks the strictest choice that
+  still reads at least 95% of the names. The choices, from strict to loose, for a value like `B03`:
+
+  | Choice | Reads |
+  |---|---|
+  | Same shape | one capital letter and two digits: `B03`, `C10`, not `B3` |
+  | Flexible | letters then digits, any number of each: `B03`, `B3`, `AB12` |
+  | Any word | any letters and digits: also `Well3B` |
+  | Several words | like *Any word*, and also values in several words: `Far Red` |
+  | Seen values | only the values found in your names: `B03` or `B04` or `C10` |
+
+  Each choice shows how many of your names it reads (`432/432`).
+- **Keeping the letter out of a value.** For a part like `s2`, the card has **Value only, skip “s”**: ticked,
+  Site reads `2`; unticked, it reads `s2`.
+- **The two boxes under the pattern** (each has an **i** with an example):
+  - **Anchor with the neighbouring part on each side** (on): the pattern includes the text around your labels, so
+    it reads each value in the right place. Leave it on.
+  - **Allow fixed text to vary in its numbers** (on): the numbers you did not label may change (`w1` also matches
+    `w2`). Untick it to match only names with exactly the sample's numbers.
+- **What the symbols mean**: the **i** beside **2 · Pattern** explains every symbol the tool writes: `(?P<…>)`,
+  `[A-Z]`, `\d`, `{2}`, `+`, `*`, `(?:…)`, `|`, `[^_\-.\s]`, `^`, `$`, `\`.
+
+### If something looks wrong
+
+- **"One name only" and no labels**: the tool compares names to find what changes. Paste several names.
+- **A word such as `DAPI` stays as fixed text**: every name you gave has the same word there. Add names with other
+  channels, or label the part by hand.
+- **A name gets blank values**: it is built differently from the sample. Click it in the list of unmatched names.
+- **"Python could not be loaded"**: the download was cut. Press **Try again**.
+- **"A newer version of ez.Regex was published"**: the page was open during an update. Press **Reload the page**
+  and paste the names again.
+
+The cross at the top right of the screen, or the tool's name in the header, goes back to the names; what you pasted
+is still there.
 
 ### What counts as a name
 
