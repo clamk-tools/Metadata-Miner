@@ -11,6 +11,16 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-10 · No proposed labels
+
+- **Seen:** the Detect screen opens with nothing labeled: you label each part yourself (a click, a drag, or the *Or
+  pick a part* buttons). The *Suggest again* button is gone. The note "Nothing varies across these names, so there
+  is nothing to suggest" is gone; the one-name notice says the unlabeled parts stay as they are.
+- **Inside:** the engine's proposal is removed with its tests: `suggest_fields`, `whole_part` and `_ALIAS` in
+  `engine.py`, the `suggest` request key (`detect()`, `glue.run`, `DetectRequest`). The tests that started from the
+  proposal now label by hand and check the same patterns, the plate's included.
+- **Decided:** every label is the user's (`doc/ARCHITECTURE.md` section 11).
+
 ### 2026-10-10 · You select exactly what you want
 
 - **Seen:** a click on the sample name selects that one character, and a drag exactly the characters it covers;

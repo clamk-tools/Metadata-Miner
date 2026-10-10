@@ -94,8 +94,8 @@ export function App() {
           <>
             {names.length === 1 && (
               <p className="notice info">
-                One name only: Detect has nothing to compare it with, so it proposes no labels and keeps a word such as DAPI as it is. Give it several names from
-                the same folder for a pattern that fits them all.
+                One name only: Detect has nothing to compare it with, so the pattern keeps every unlabeled part exactly as it is (a word such as DAPI stays
+                fixed text). Give it several names from the same folder for a pattern that fits them all.
               </p>
             )}
 

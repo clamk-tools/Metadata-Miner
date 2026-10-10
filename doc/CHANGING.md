@@ -50,7 +50,6 @@ three take a second each, the build a few seconds, the end-to-end tests about a 
 | The change | Start in | Also touch |
 |---|---|---|
 | The pattern written for some names | `engine.py`: `core_pattern`, `analyze`, `build_pattern` | Python tests; the README if a limit moves |
-| What is proposed at the start | `suggest_fields` | Python tests |
 | What happens when the sample changes | `remap`, `widen` | Python tests; the notes shown under the name |
 | A message from Python to the user | The `ValueError` text or the `notes` in `engine.py`. Only a `ValueError` reaches the user as a message: anything else is shown as a bug (`glue.run`) | Any test that asserts it |
 | How the screen waits for Python (disabled controls, dimming, focus) | `call` and the `focused` effect in `DetectScreen.tsx`; the 400 ms rule in `detect.css` | `SLOW_MS` pair (`doc/ARCHITECTURE.md` section 10); the focus and dimming tests in `e2e/detect.spec.ts` |
@@ -97,7 +96,7 @@ name in any file: the privacy guard refuses the commit (README, *Publishing safe
 ### 6.2 A new option or action
 
 An option is sent with every request (`generalize`, `anchor`). An action is sent once (`add`, `remove`, `rename`,
-`edit`, `suggest`).
+`edit`).
 
 1. `detect()`: a keyword argument with a default that keeps today's behaviour.
 2. `glue.run`: read the key from the request and pass it. A key missing here is dropped without an error
@@ -122,7 +121,7 @@ beside them.
 
 - The buttons: `PRESETS` in `LabelPicker.tsx`.
 - What the engine knows about a name is separate, in `engine.py`: `NUMERIC_NAMES` (the value skips its
-  letters by default: `s2` reads `2`), `known` and `_ALIAS` in `suggest_fields` (what is proposed), `_hint` (the
+  letters by default: `s2` reads `2`), `_hint` (the
   warning when the values do not look like the label).
 - A field name must be usable as a group name: a letter, then letters, digits or `_` (`check_name`).
 

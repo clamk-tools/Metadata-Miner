@@ -60,7 +60,6 @@ export interface DetectRequest {
   sample_index?: number;
   from_index?: number; // the name the fields were made on, when the sample changes
   fields?: DetectField[];
-  suggest?: boolean;
   add?: { name: string; start: number; end: number };
   remove?: string;
   rename?: { from: string; to: string };
