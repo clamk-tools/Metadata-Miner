@@ -1,4 +1,4 @@
-import type { DetectToken } from "./detect-types";
+import type { DetectToken } from "../python/contract";
 
 // Turning a click or a drag on the sample name into the stretch to label. The tokens are the name cut into groups of
 // letters, groups of digits, other characters and separators, as Python answered them.

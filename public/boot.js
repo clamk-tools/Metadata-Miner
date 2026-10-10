@@ -1,7 +1,7 @@
 // Runs before the page's own script, as a plain file: the built page's Content-Security-Policy allows no inline
 // script (vite.config.ts). Two jobs.
 
-// 1. The theme chosen on the hub or on any Clamk tool (same origin, same key as src/theme.ts), put on <html> before
+// 1. The theme chosen on the hub or on any Clamk tool (same origin, same key as src/theme/theme.ts), put on <html> before
 //    the first paint.
 try {
   var t = localStorage.getItem("clamk-tools:theme");
@@ -10,7 +10,7 @@ try {
 
 // 2. A page opened before a release (a tab the browser restored) asks for scripts and styles the release replaced.
 //    When one of the site's own files is missing, the page cannot start: say so, and offer the reload that fixes it.
-//    (A missing Python worker is told by the page itself: src/detectClient.ts.)
+//    (A missing Python worker is told by the page itself: src/python/client.ts.)
 (function () {
   var shown = false;
   function show() {

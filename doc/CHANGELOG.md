@@ -1,6 +1,7 @@
 # Change log
 
-What changed in ez.Regex (called MetadataMiner until 2026-10-10), newest first. One entry per change that was published or is ready to be.
+What changed in ez.Regex (called MetadataMiner until 2026-10-10), newest first. One entry per change that was
+published or is ready to be.
 
 The git history is not the record: the published repository may be squashed to a single commit. This file is.
 
@@ -9,6 +10,41 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 (year-month-day) and a few words. Work that is not yet on `main` goes under **Unreleased**.
 
 ## Unreleased
+
+### 2026-10-10 · A step-by-step guide in the README
+
+- **Seen:** nothing changes on the page. The README's *Using it* is now *How to use it*: the steps in short, then
+  each step in detail (getting the names out of Windows or a Mac, checking labels, checking what is read, where the
+  pattern goes in CellProfiler), a worked example, the fine-tuning options with what each choice reads, and what to
+  do when something looks wrong.
+- **Inside:** `README.md`; `doc/CHANGING.md` points to the new section names.
+
+### 2026-10-10 · Fewer things to keep in step by hand
+
+- **Seen:** nothing changes on the page.
+- **Inside:** the answer from Python lists the pattern styles with their names (`styles`), so the page's own copy
+  (`STYLES`) is gone: a new style needs no change on the page. `test/pairs.test.ts`, run by `npm test`, fails when
+  values written in two files differ: the request keys of `detect()`, `glue.run` and `DetectRequest`; the field
+  colours; the 0.4 s delay; the two dark-colour blocks; the background the theme tests expect; the theme key; the
+  pattern both test suites assert; the Python version; the policy word the offline test takes out.
+  `PatternOptions.tsx` and `PythonStatus.tsx` are split out of `DetectScreen.tsx` and `App.tsx`. The checks and
+  the setup are written once (AGENTS, README) instead of three times.
+- **Decided:** `doc/ARCHITECTURE.md` section 10 is in two parts: the pairs a test holds, and those kept by hand.
+
+### 2026-10-10 · A tool of its own, and a leaner repository
+
+- **Seen:** every pasted name is used, whatever its extension (`.nd2`, `.czi` and others were turned away). The
+  warning about two names that differ only by their extension is gone: the pattern was never affected. The look and
+  everything else on the page are unchanged (screenshots compared before and after, light and dark).
+- **Inside:** ez.Regex no longer keeps step with HC-Flow, the tool Detect was first built in. The engine is one file,
+  `py/engine.py` (was `py/app/imaging/metadata_detect.py` and `metadata.py`), and its tests are `test_engine.py`,
+  grouped by topic. The page's code is in folders by job: `src/python/` (the worker, its client, the contract),
+  `src/names/`, `src/detect/` (the Detect screen, split into its parts), `src/theme/`. `MetadataDetect` is now
+  `DetectScreen`, and the answer's type `DetectAnswer`. The dev server is back on Vite's port, 5173. The docs drop
+  every HC-Flow note and recipe.
+- **Decided:** the decision "the engine stays a drop-in for HC-Flow" is replaced by "the engine stands alone"
+  (`doc/ARCHITECTURE.md` section 11): still the standard library only and nothing about the browser, for speed of
+  download and of tests, no longer for HC-Flow.
 
 ### 2026-10-10 · The tool is now ez.Regex
 
@@ -128,7 +164,7 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
   (`doc/LLMfeed_VISUAL-IDENTITY.md`). The fonts are not loaded from a font CDN: the page makes no third-party
   request apart from the Python runtime.
 
-## 2026-10-02 · Engine changes not yet in HC-Flow
+## 2026-10-02 · Values in several words, and a faster engine
 
 - **Seen:** a value that is several words in some names (`Far Red` where the others have `Blue`) is read. A new
   pattern style, *Several words*. Clicking an unmatched name of that kind widens the label and keeps the sample.
@@ -143,7 +179,7 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 - **Seen:** the names step (drop files or a folder, choose files, paste names) and the Detect screen: proposed
   labels, labeling by click, drag or button, pattern styles, the two pattern options, what the pattern reads, the
   unmatched names, *Copy this pattern*.
-- **Inside:** HC-Flow's Detect dialog as a static page. Python (`metadata_detect.py`, `metadata.py`) runs in
+- **Inside:** a static page. Python (`metadata_detect.py`, `metadata.py`) runs in
   Pyodide in a Web Worker behind `glue.py`. Tests in Python, in TypeScript and end to end in three browsers. CI
   tests, builds and publishes to GitHub Pages. The privacy guard checks every commit.
 - **Decided:** see `doc/ARCHITECTURE.md`, section 11.

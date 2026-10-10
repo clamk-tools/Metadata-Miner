@@ -239,12 +239,6 @@
   color: var(--blue-text);
 }
 
-.notice.warn {
-  border-color: var(--amber-ink);
-  background: var(--amber-tint);
-  color: var(--amber-text);
-}
-
 .notice.bad {
   border-color: var(--coral-ink);
   background: var(--coral-tint);

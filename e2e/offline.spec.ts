@@ -58,7 +58,7 @@ test("when the browser refuses to run Python the page says so, and does not offe
 // A release replaces every file of the site. A page opened before it (a tab the browser restored) asks for files that
 // are gone: trying again cannot help, a reload does. Played by answering 404 for the file, as the site then does.
 test("a page opened before a release whose Python script is gone says so, and Reload brings the new version", async ({ page, context, pageErrors }) => {
-  const worker = "**/assets/detect.worker-*.js";
+  const worker = "**/assets/worker-*.js";
   await context.route(worker, (route) => route.fulfill({ status: 404, body: "Not Found" }));
   await page.goto("./");
 
