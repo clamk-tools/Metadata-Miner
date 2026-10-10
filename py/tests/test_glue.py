@@ -1,5 +1,7 @@
 """glue.py: what the page calls in Pyodide, between the page and the engine."""
 import json
+import re
+from pathlib import Path
 
 import pytest
 
@@ -111,3 +113,29 @@ def test_a_malformed_request_from_the_page_is_a_bug():
     reply = _run(add={"name": "Well"})  # no start or end: the page sent something it never should
 
     assert reply["ok"] is False and reply["unexpected"] is True
+
+
+# ---- the answer, as the page expects it ----
+
+
+CONTRACT = Path(__file__).resolve().parents[2] / "src" / "python" / "contract.ts"
+
+
+def _keys(interface: str) -> set[str]:
+    """The keys of a TypeScript interface in contract.ts, read as text."""
+    body = re.search(rf"^export interface {interface} \{{\n(.*?)^\}}", CONTRACT.read_text(), re.M | re.S)
+    assert body, f"contract.ts has no interface {interface}"
+    return set(re.findall(r"^  (\w+)\??:", body.group(1), re.M))
+
+
+def test_the_answer_has_the_keys_contract_ts_gives_it():
+    """Nothing else checks this side of the contract: a key added or renamed on one side only would show on the
+    page as an empty value, not as an error (doc/ARCHITECTURE.md section 10.1)."""
+    answer = _run(suggest=True)["answer"]
+
+    assert set(answer) == _keys("DetectAnswer")
+    assert answer["fields"] and answer["tokens"]
+    for field in answer["fields"]:
+        assert set(field) == _keys("DetectField")
+    for token in answer["tokens"]:
+        assert set(token) == _keys("DetectToken")
