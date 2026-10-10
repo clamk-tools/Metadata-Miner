@@ -11,6 +11,16 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-10 · CI tests the three browsers side by side
+
+- **Seen:** nothing on the page. CI answers sooner: the end-to-end tests of Chromium, Firefox and WebKit run at the
+  same time instead of one after another.
+- **Inside:** `ci.yml` has a new job, `e2e`, one copy per browser. Each tests the `dist/` the `test` job built
+  (passed on as a file of the run), so what is tested is still what is published. The browsers Playwright
+  downloads are kept between runs until `package-lock.json` changes. Publishing waits for every job.
+- **Decided:** the tests themselves are unchanged. Loading Python once per file would be quicker still, but tests
+  would share a page and could affect one another.
+
 ### 2026-10-10 · Fixes from the security and privacy audit
 
 - **Seen:** when a label's style is *Seen values*, its card says that the pattern now holds the values of your
