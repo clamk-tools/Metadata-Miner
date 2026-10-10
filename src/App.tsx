@@ -151,7 +151,7 @@ export function App() {
 
       <footer className="wrap foot">
         <p>
-          <a className="quiet" href="https://github.com/clamk-tools/Metadata-Miner">
+          <a className="quiet" href="https://github.com/clamk-tools/ez.Regex">
             Source
           </a>
         </p>

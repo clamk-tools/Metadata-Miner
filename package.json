@@ -1,5 +1,5 @@
 {
-  "name": "metadataminer",
+  "name": "ezregex",
   "private": true,
   "version": "1.0.0",
   "description": "Write the metadata regex for your image file names by labeling one of them",
@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview --base /Metadata-Miner/ --port 4173 --strictPort",
+    "preview": "vite preview --base /ez.Regex/ --port 4173 --strictPort",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "test": "vitest run",

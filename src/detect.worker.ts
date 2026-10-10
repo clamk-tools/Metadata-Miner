@@ -11,7 +11,7 @@ import type { FromWorker, ToWorker } from "./detect-types";
 // pyodide/<version>/), beside the folder this script is in: assets/ once built, src/ on the dev server. The script's
 // own address is used, not the worker's: the worker is started from a blob (detectClient.ts).
 const INDEX_URL = new URL(/* @vite-ignore */ `../pyodide/${version}/`, import.meta.url).href;
-const ROOT = "/metadataminer";
+const ROOT = "/ezregex";
 
 interface Glue {
   set_names(namesJson: string): number;

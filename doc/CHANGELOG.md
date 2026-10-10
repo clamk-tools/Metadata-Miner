@@ -17,8 +17,12 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 - **Inside:** `App.tsx` (header), `app.css` (`.brand-line`, `.tagline`), `index.html`, `public/boot.js`, the
   end-to-end tests, the README and the docs. Older change log entries and the Python test headings keep the old
   name: they are history.
-- **Decided:** the repository, the web address (`…/Metadata-Miner/`), the package name and Python's working folder
-  in the worker keep the old name. Renaming the repository breaks shared links; the others are never seen.
+- **Repository renamed** to `ez.Regex` on GitHub the same day. The site is now at
+  https://clamk-tools.github.io/ez.Regex/. The code page's old address forwards; the old site address
+  (`…/Metadata-Miner/`) does not, and shows "page not found". The footer's *Source* link, the README, the preview
+  and test address, the package name and Python's working folder in the worker follow the new name.
+- **Not done:** a forwarding page at the old site address. It would need a second repository named
+  `Metadata-Miner`, which stops GitHub forwarding the code page.
 
 ### 2026-10-09 · A page opened before a release says so
 
