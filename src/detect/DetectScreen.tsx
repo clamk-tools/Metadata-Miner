@@ -33,12 +33,12 @@ function reason(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-// The Detect screen (its cross goes back to the names). Two zones side by side: on the left the work (the sample name is shown
-// large, with the label choices right under it, then the pattern those labels give), on the right the list of what was
-// produced (one card per labeled field). What the pattern reads from the rest of the names follows underneath. Detect
-// starts with its own proposal, so most of the time it is correcting rather than starting. The pattern is written by
-// Python (py/engine.py, in the worker), one request per edit; this component holds the fields and
-// sends them back.
+// The Detect screen (its cross goes back to the names). Two zones side by side: on the left the work (the sample name
+// shown large, with the label choices right under it, then the pattern those labels give), on the right the list of
+// what was produced (one card per labeled field). What the pattern reads from the rest of the names follows
+// underneath. Detect starts with its own proposal, so most of the time it is correcting rather than starting. The
+// pattern is written by Python (py/engine.py, in the worker), one request per edit; this component holds the fields
+// and sends them back.
 export function DetectScreen({ client, starting, onClose }: Props) {
   const [answer, setAnswer] = useState<DetectAnswer | null>(null);
   const [options, setOptions] = useState<Options>({ generalize: true, anchor: true });

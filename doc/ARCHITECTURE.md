@@ -20,6 +20,7 @@ answer and never builds a pattern itself.
   ├─ names/NamesInput.tsx ── names.ts          ├─ loads Pyodide from the site (pyodide/)
   ├─ detect/DetectScreen.tsx ── selection.ts   ├─ writes the two Python files into Pyodide's file system
   ├─ theme/ThemeSwitch.tsx ── theme.ts         └─ glue.py ─► engine.detect()
+  ├─ python/PythonStatus.tsx
   └─ DetectClient (python/client.ts)
         setNames(names)   once per set of names   ──►
         detect(request)   once per edit           ──►   ◄── one JSON answer per request
@@ -55,8 +56,8 @@ answer and never builds a pattern itself.
    (from `pyodide/<version>/`, on the site itself) at once, so Python is usually ready by the time the names are.
    The engine status is `loading`, `ready` or `failed`, read with `useSyncExternalStore`.
 2. **Names.** `namesFromText()` turns the pasted text into names (each line's file name, sorted, each once).
-   `App.load` sends them to the worker (`client.setNames`) in the event handler, so they are there before the first question. It then bumps `run`,
-   the React `key` of the Detect screen: each set of names gets a fresh screen.
+   `App.load` sends them to the worker (`client.setNames`) in the event handler, so they are there before the first
+   question. It then bumps `run`, the React `key` of the Detect screen: each set of names gets a fresh screen.
 3. **First answer.** `DetectScreen` mounts and asks `{ suggest: true }`.
 4. **An edit.** Every action on the screen calls `call(patch)`, which sends
    `{ sample_index, fields, generalize, anchor, ...patch }`. `fields` are the ones of the last answer, unchanged.
@@ -159,7 +160,8 @@ A style chosen by hand sets `auto` to false and sticks.
 6. `build_pattern`: the fields as named groups, with the unlabeled text between and around them (5.5). With
    *Anchor* on, tied to the start (`^`) or both ends (`$`) of the name if it would misread the sample.
 7. `misread`: a note for each field the pattern still reads somewhere else in the sample.
-8. Compile the pattern and read every name with it (`re.search`, not a full match). From that: matched and unmatched names, the preview rows, each field's values, type and hint.
+8. Compile the pattern and read every name with it (`re.search`, not a full match). From that: matched and
+   unmatched names, the preview rows, each field's values, type and hint.
 
 ### 5.4 When the sample changes
 
@@ -237,8 +239,9 @@ be full paths, quoted or not: the file name is kept. Every name is kept, whateve
 
 `public/boot.js`, a plain script that `index.html` loads in its `<head>`, puts a stored choice on
 `<html data-theme>` before the first paint. It is a file because the page's policy allows no inline script
-(section 9). `theme/theme.ts` reads it, follows the system setting when there is none, and stores a choice under `clamk-tools:theme` in `localStorage`. The hub and
-every Clamk tool share that key and the same origin, so the choice holds across them.
+(section 9). `theme/theme.ts` reads it, follows the system setting when there is none, and stores a choice under
+`clamk-tools:theme` in `localStorage`. The hub and every Clamk tool share that key and the same origin, so the choice
+holds across them.
 
 ## 7. Styles
 
@@ -286,8 +289,8 @@ every Clamk tool share that key and the same origin, so the choice holds across 
   outdated-page test lets that one message through, nothing else). The worker script is imported with an
   `import` statement, not an `import()` call: WebKit also reports a failed `import()` as a page error, even when
   caught, and an `import()` cancelled by leaving the page fails that way in normal use.
-- The end-to-end tests find things by role, label and visible text, plus four test ids: `pattern`, `matched`,
-  `engine`, `ignored`, and the `data-i` of a character. Changing a text on the page can break a test.
+- The end-to-end tests find things by role, label and visible text, plus three test ids (`pattern`, `matched`,
+  `engine`) and the `data-i` of a character. Changing a text on the page can break a test.
 - The React components have no unit tests: the end-to-end tests cover them.
 
 ## 9. Build, CI and deploy

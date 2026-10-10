@@ -11,7 +11,8 @@ import { ThemeSwitch } from "./theme/ThemeSwitch";
 const client = new DetectClient();
 
 // The page opens on the names step (NamesInput); once names are given it shows Detect on them (DetectScreen), and the
-// cross of Detect goes back to the names. Around both: the frame every Clamk tool has (rail, header with the name and the theme switch, footer).
+// cross of Detect goes back to the names. Around both: the frame every Clamk tool has (rail, header with the name and
+// the theme switch, footer).
 export function App() {
   const engine = useSyncExternalStore(client.subscribe, client.status);
   const [names, setNames] = useState<string[] | null>(null); // null: none given yet; []: none found in the text

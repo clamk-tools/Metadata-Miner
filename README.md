@@ -111,9 +111,10 @@ serves (it is the code in this repository, built by its CI).
 
 The pattern is written by Python, by one file: `py/engine.py` (the labels, the pattern styles, the proposal), on the
 standard library only. It runs in the browser with [Pyodide](https://pyodide.org) (Python compiled to WebAssembly)
-inside a Web Worker, so the page never freezes. Running the real Python matters: the pattern is for Python's `re`, and a JavaScript
-regular expression is not the same language (`(?P<Name>` against `(?<Name>`, and other differences). The Pyodide
-runtime comes from the `pyodide` npm package and is published with the site, in `pyodide/<version>/`.
+inside a Web Worker, so the page never freezes. Running the real Python matters: the pattern is for Python's `re`,
+and a JavaScript regular expression is not the same language (`(?P<Name>` against `(?<Name>`, and other
+differences). The Pyodide runtime comes from the `pyodide` npm package and is published with the site, in
+`pyodide/<version>/`.
 
 | Path | Role |
 |---|---|
@@ -157,7 +158,7 @@ Before a change, read these (they are written for a person or an LLM assistant):
 | File | What it holds |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Where to start: what to read, the checks, the rules that are never broken |
-| [`doc/ARCHITECTURE.md`](doc/ARCHITECTURE.md) | How the tool is made: the flow, the contract between the page and Python, the engine, what is kept in step by hand, the decisions that stand |
+| [`doc/ARCHITECTURE.md`](doc/ARCHITECTURE.md) | How the tool is made: the flow, the contract between the page and Python, the engine, what is kept in step (and which of it a test checks), the decisions that stand |
 | [`doc/CHANGING.md`](doc/CHANGING.md) | How to make a change: the loop, the checks, where each kind of change goes, recipes, the list to go through before it is done |
 | [`doc/CHANGELOG.md`](doc/CHANGELOG.md) | What changed, newest first |
 | [`doc/LLMfeed_VISUAL-IDENTITY.md`](doc/LLMfeed_VISUAL-IDENTITY.md) | The Clamk Tools look, which every change to the page follows |

@@ -7,8 +7,8 @@ named-group regular expression for all of them. There is no backend.
 
 ## Read first
 
-1. `doc/ARCHITECTURE.md` sections 1 to 4 (the flow and the page/Python contract) and 10 (pairs kept in step by
-   hand). Section 5 before touching the Python, 6 and 7 before touching the page, 11 before reversing anything.
+1. `doc/ARCHITECTURE.md` sections 1 to 4 (the flow and the page/Python contract) and 10 (what is written in two
+   places, and which of it a test checks). Section 5 before touching the Python, 6 and 7 before touching the page, 11 before reversing anything.
 2. `doc/CHANGING.md`: the loop, where each kind of change goes (section 4), recipes, the checklist (section 7).
 3. `doc/LLMfeed_VISUAL-IDENTITY.md` before any visual change. It is the Clamk Tools family brief: follow it, do
    not edit it here.

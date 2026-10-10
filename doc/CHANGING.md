@@ -61,10 +61,12 @@ three take a second each, the build a few seconds, the end-to-end tests about a 
 | Which names are accepted | Recipe 6.5 | |
 | A text, a layout, a control on the Detect screen | `src/detect/`, `detect.css` | `e2e/` locators; the README if it quotes the text |
 | The names step, the notices, the frame | `src/names/`, `App.tsx`, `app.css` | Same |
+| What the page says while Python loads or fails | `src/python/PythonStatus.tsx` | Same; the tests in `e2e/offline.spec.ts` |
 | Colours, type, spacing, a control's look | Recipe 6.6 | |
 | The Pyodide version | Recipe 6.7 | |
-| Something new the page loads (an image, a font, a script, a style) | Recipe 6.10 | |
 | The repository name or the site's path | Recipe 6.8 | |
+| A new dependency | Recipe 6.9 | |
+| Something new the page loads (an image, a font, a script, a style) | Recipe 6.10 | |
 
 ## 5. The docs to update
 
@@ -142,7 +144,7 @@ beside them.
    `prefers-reduced-motion`.
 5. If `--bg` changes, update `DARK` and `LIGHT` in `e2e/detect.spec.ts` (`npm test` says so).
 6. A seventh field colour needs a `.g6` in `detect.css`, its tokens in `theme.css` (light and both dark blocks),
-   and `COLORS` changed in `DetectScreen.tsx`.
+   and `COLORS` changed in `DetectScreen.tsx` (`npm test` fails until the last two agree).
 
 ### 6.7 The Pyodide version
 
