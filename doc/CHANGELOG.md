@@ -19,6 +19,9 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 - **Inside:** `App.tsx` (header), `NamesInput.tsx` (the line under the title), `app.css` (`.brand-line`, `.tagline`), `index.html`, `public/boot.js`, the
   end-to-end tests, the README and the docs. The Python test headings say ez.Regex too. Older change log entries keep the
   old name: they are history.
+- **Test fixed:** "the header links back to all the Clamk tools" opened the page a second time, which WebKit
+  sometimes reported as an error (the first page left while its worker script loaded). It now uses the page
+  opened before each test.
 - **Repository renamed** to `ez.Regex` on GitHub the same day. The site is now at
   https://clamk-tools.github.io/ez.Regex/. The code page's old address forwards; the old site address
   (`…/Metadata-Miner/`) does not, and shows "page not found". The footer's *Source* link, the README, the preview

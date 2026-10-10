@@ -245,7 +245,8 @@ test("the name in the header goes back to the names", async ({ page }) => {
 });
 
 test("the header links back to all the Clamk tools", async ({ page }) => {
-  await page.goto("./");
+  // the page is already open (beforeEach): opening it again would leave the first one while its worker script loads,
+  // which WebKit reports as a page error
   await expect(page.getByRole("banner").getByRole("link", { name: "← All tools" })).toHaveAttribute("href", "https://clamk-tools.github.io/");
 });
 
