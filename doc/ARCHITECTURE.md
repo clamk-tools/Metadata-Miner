@@ -268,7 +268,7 @@ every Clamk tool share that key and the same origin, so the choice holds across 
 | End to end | `e2e/detect.spec.ts`, `e2e/offline.spec.ts`, `e2e/network.spec.ts` | `npm run e2e` | The built site in Chromium, Firefox and WebKit, with the real Pyodide |
 
 - `test_metadata_detect.py` starts with HC-Flow's tests, unchanged. What this tool adds goes in dated sections at the end
-  of the file (the older ones say "MetadataMiner", its old name).
+  of the file.
 - The end-to-end tests run on **`dist/`** served by `npm run preview` under `/ez.Regex/`. Build first, or
   they test the previous build. Pyodide is in `dist/`, so they need no network.
 - `e2e/network.spec.ts` holds the privacy promise. One test records every request of a session (the worker's

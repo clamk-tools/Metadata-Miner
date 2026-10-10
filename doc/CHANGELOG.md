@@ -17,8 +17,8 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
   line under "From files to Regex" is now only "Find the regex for your metadata." ("Only file names are read."
   is gone from there; the README's Privacy section still says it).
 - **Inside:** `App.tsx` (header), `NamesInput.tsx` (the line under the title), `app.css` (`.brand-line`, `.tagline`), `index.html`, `public/boot.js`, the
-  end-to-end tests, the README and the docs. Older change log entries and the Python test headings keep the old
-  name: they are history.
+  end-to-end tests, the README and the docs. The Python test headings say ez.Regex too. Older change log entries keep the
+  old name: they are history.
 - **Repository renamed** to `ez.Regex` on GitHub the same day. The site is now at
   https://clamk-tools.github.io/ez.Regex/. The code page's old address forwards; the old site address
   (`…/Metadata-Miner/`) does not, and shows "page not found". The footer's *Source* link, the README, the preview
