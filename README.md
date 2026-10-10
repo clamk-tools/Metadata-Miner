@@ -26,7 +26,7 @@ You need a list of your image file names. Nothing else: the files themselves are
 ### In short
 
 1. Paste your file names and press **Use these names**.
-2. The tool guesses which parts are the plate, the well, the site, the channel. Check the coloured labels.
+2. Label the parts you need: select a part of the name, then say what it is (Plate, Well, Site, Channel...).
 3. Check the table: does each name give the right values?
 4. Press **Copy this pattern** and paste it into your analysis software.
 
@@ -51,12 +51,11 @@ Paste into the box under **Paste the names, one per line**, then press **Use the
 The first time, the page downloads its Python engine (about 6 MB, a few seconds). The browser keeps it, so the next
 visits start at once. You can paste while it loads.
 
-### Step 3 · Check the labels
+### Step 3 · Label the parts
 
-The screen shows one of your names large: the **sample name**. The tool has already put coloured labels on the
-parts that change between names, and named them (Plate, Well, Site, Channel...).
+The screen shows one of your names large: the **sample name**. Nothing is labeled yet: you choose each part that
+holds information, and the tool writes the pattern from your labels. Each label gets its own colour.
 
-- **A label is right**: leave it.
 - **A label is wrong or not wanted**: click the small cross on it.
 - **A part has no label**: select it in the sample name. You decide exactly what is selected:
   - **click** a character to select that one character (the `B` alone in `BO3`);
@@ -66,7 +65,7 @@ parts that change between names, and named them (Plate, Well, Site, Channel...).
   Then choose what it is: one of the buttons (Plate, Well, Row, Column, Site, Field, Channel, Filter, Laser, Time,
   Date, Z), or type your own name in **Other name** and press **Add**. Press **Escape** to drop a selection.
 - **A label has the wrong name**: on its card, on the right, click the name and type a new one.
-- **Start again**: **Suggest again** brings back the tool's guess; **Clear all** removes every label.
+- **Start again**: **Clear all** removes every label.
 
 The arrows beside **1 · Sample name** show another of your names as the sample, if that one is easier to label.
 
@@ -99,14 +98,15 @@ plate1_B04_s2_w2_GFP.tif
 plate2_C10_s1_w1_DAPI.tif
 ```
 
-get four labels at once, with no click: Plate, Well, Site and Channel. All six names are matched, and the pattern is
+are labeled on the first one, `plate1_B03_s1_w1_DAPI.tif`, with four buttons under **Or pick a part**: `plate1` as
+Plate, `B03` as Well, `s1` as Site, `DAPI` as Channel. All six names are matched, and the pattern is
 
 ```
 (?P<Plate>plate\d+)_(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)_w\d+_(?P<Channel>[A-Z]+)
 ```
 
-From `plate1_B03_s2_w1_DAPI.tif` it reads Plate `plate1`, Well `B03`, Site `2`, Channel `DAPI`. The `w1` part
-changes too, but follows the channel, so it is not given a label of its own.
+From `plate1_B03_s2_w1_DAPI.tif` it reads Plate `plate1`, Well `B03`, Site `2`, Channel `DAPI`. The `w1` part was
+left unlabeled, so the pattern only steps over it (`w\d+`).
 
 ### Fine-tuning (optional)
 
@@ -136,9 +136,9 @@ Most of the time the tool's choices are right. If not:
 
 ### If something looks wrong
 
-- **"One name only" and no labels**: the tool compares names to find what changes. Paste several names.
-- **A word such as `DAPI` stays as fixed text**: every name you gave has the same word there. Add names with other
-  channels, or label the part by hand.
+- **"One name only"**: the tool compares names to write a pattern that fits them all. Paste several names.
+- **A label reads the wrong values**: the label may cover too much or too little. Remove it and select the part
+  again, or change how strict it is (*Fine-tuning* above).
 - **A name gets blank values**: it is built differently from the sample. Click it in the list of unmatched names.
 - **"Python could not be loaded"**: the download was cut. Press **Try again**.
 - **"A newer version of ez.Regex was published"**: the page was open during an update. Press **Reload the page**
@@ -190,7 +190,7 @@ serves (it is the code in this repository, built by its CI).
   try again. Tested by taking the word out of the policy, not on an old browser.
 - **Speed with many names**: every change is checked against all the names. Measured on a desktop PC, a change
   takes under 0.06 s with 500 names; with 12,000 names, a change (a label, an option, another sample name) takes
-  about 0.2 s and the first suggestion about 1 s. The controls wait while an answer is worked out; they are drawn
+  about 0.2 s and opening the names about 1 s. The controls wait while an answer is worked out; they are drawn
   dimmed, and the page shows "Working…", only when it takes longer than 0.4 s. The keyboard focus stays where it was.
 - **Only the file name is labeled**, not the names of its folders.
 - **A value in several words** is read only from a sample that has it as one word (`Blue`, not `Far Red`), and
@@ -210,7 +210,7 @@ serves (it is the code in this repository, built by its CI).
 
 ## How it works
 
-The pattern is written by Python, by one file: `py/engine.py` (the labels, the pattern styles, the proposal), on the
+The pattern is written by Python, by one file: `py/engine.py` (the labels, the pattern styles, the values read), on the
 standard library only. It runs in the browser with [Pyodide](https://pyodide.org) (Python compiled to WebAssembly)
 inside a Web Worker, so the page never freezes. Running the real Python matters: the pattern is for Python's `re`,
 and a JavaScript regular expression is not the same language (`(?P<Name>` against `(?<Name>`, and other

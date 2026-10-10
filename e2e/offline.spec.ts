@@ -20,7 +20,7 @@ test("when Python cannot be downloaded the page says so, and Try again recovers"
   pageErrors.length = 0;
   await page.getByRole("button", { name: "Try again" }).click();
 
-  await expect(page.getByTestId("matched")).toHaveText("Matched 4 of 4 names");
+  await expect(page.getByTestId("pattern")).toHaveText("No pattern yet."); // Python has answered
 });
 
 // A browser too old for the word that allows WebAssembly in the page's policy refuses to run Python, every time. No
@@ -77,7 +77,7 @@ test("a page opened before a release whose Python script is gone says so, and Re
   await page.getByRole("button", { name: "Reload the page" }).click();
   await page.getByLabel("Paste the names").fill(NAMES); // a reload empties the paste box: nothing is stored
   await page.getByRole("button", { name: "Use these names" }).click();
-  await expect(page.getByTestId("matched")).toHaveText("Matched 4 of 4 names");
+  await expect(page.getByTestId("pattern")).toHaveText("No pattern yet."); // Python has answered
 });
 
 test("a page opened before a release whose own script is gone says so, and Reload brings the new version", async ({ page, context }) => {

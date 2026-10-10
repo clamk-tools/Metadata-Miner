@@ -40,11 +40,6 @@ _RUN = re.compile(r"[A-Za-z]+|\d+|[^A-Za-z\d]+")
 _PREFIXED = re.compile(r"([A-Za-z]+)(\d+)")
 _EXTENSION = re.compile(r"tif|tiff|png|jpe?g|nd2|czi|lif|ome|bmp|gif", re.IGNORECASE)
 _WELL = re.compile(r"[A-P]\d{1,2}")
-# Words that say what the next group is: "fld 4" is a field, "wv Blue" a channel.
-_ALIAS = {
-    "fld": "Field", "field": "Field", "f": "Field", "site": "Site", "s": "Site", "t": "Time", "tp": "Time",
-    "z": "Z", "w": "Channel", "wv": "Channel", "ch": "Channel", "c": "Channel", "plate": "Plate", "p": "Plate",
-}
 
 
 def esc(text: str) -> str:
@@ -247,11 +242,6 @@ def resolve(field: Field, parsed: Parsed) -> tuple[int, int] | None:
         return None
     start, end = first.start + first.runs[k0][0] + field.c0, last.start + last.runs[k1][1] - field.c1
     return (start, end) if end > start else None
-
-
-def whole_part(name: str, sample: Parsed, index: int) -> Field:
-    first, last = _word_bounds(sample.parts[index])
-    return new_field(name, sample, index, first, index, last)
 
 
 def _word_bounds(part: Part) -> tuple[int, int]:
@@ -632,89 +622,6 @@ def add_field(ctx: Context, fields: list[Field], name: str, start: int, end: int
     return kept
 
 
-def suggest_fields(ctx: Context) -> list[Field]:
-    """Fields proposed from what varies across the names: a part that looks like a well, a site, a channel
-    name ..., or, inside a part that is none of those, one group of letters or digits at a time."""
-    sample = ctx.sample
-    n = len(sample.parts)
-    sample_tokens = tokens(sample)
-
-    def share(counts: Counter[str], pattern: re.Pattern) -> float:
-        """`counts` holds each value with how many names have it: a folder has few different ones."""
-        return sum(times for v, times in counts.items() if pattern.fullmatch(v)) / sum(counts.values()) if counts else 0.0
-
-    def previous_word(seg: int, k: int) -> str:
-        at = next(i for i, t in enumerate(sample_tokens) if not t["sep"] and t["seg"] == seg and t["k"] == k)
-        return next((t["text"] for t in reversed(sample_tokens[:at]) if not t["sep"] and ALNUM.search(t["text"])), "")
-
-    known = (  # (label, pattern, rank): a whole part of this shape is that field
-        ("Well", _WELL, 1), ("Site", re.compile(r"[sf]\d+", re.I), 1), ("Time", re.compile(r"t\d+", re.I), 1),
-        ("Z", re.compile(r"z\d+", re.I), 1), ("Plate", re.compile(r"(plate|p)\d+", re.I), 1),
-        ("Channel", re.compile(r"[wc]\d+", re.I), 3),
-    )
-    word = r"[A-Za-z][A-Za-z0-9]{2,}"
-    candidates: list[tuple[int, int, int, str, Field]] = []  # rank, part, run, label, field
-    numbered = 0
-
-    for c in range(n):
-        values = Counter(p.parts[c].text for p in ctx.same_layout)
-        distinct = Counter(values.keys())  # each value once
-        if len(distinct) < 2 or share(distinct, _EXTENSION) == 1:
-            continue
-        label, rank = None, 0
-        for name, pattern, rank_ in known:
-            if share(values, pattern) >= COVER:
-                label, rank = name, rank_
-                break
-        else:
-            if len(distinct) <= 12 and share(distinct, re.compile(word + _more(ctx.inner(c), word))) >= COVER:
-                label, rank = "Channel", 2
-        if label:
-            candidates.append((rank, c, 0, label, whole_part(label, sample, c)))
-            continue
-        if ctx.varies(c):
-            continue  # its letters and digits fall in different places from name to name (a GUID): runs don't line up
-        for k, (a, b) in enumerate(sample.parts[c].runs):
-            probe = new_field("x", sample, c, k, c, k)
-            seen = Counter(v for v in ctx.observed(probe) if v is not None)
-            kind = _run_type(sample.parts[c].text[a:b])
-            if len(seen) < 2 or kind == "o":
-                continue
-            names = sum(seen.values())
-            if len(seen) > 0.5 * names and names >= 8:
-                continue  # almost every name has its own value: an identifier, not something to label
-            before = previous_word(c, k)
-            alias, rank = _ALIAS.get(before.lower()), 1
-            if kind == "a" and share(seen, re.compile(r"[A-P]")) >= COVER:
-                label = "Row"
-            elif alias:
-                label = alias
-            elif kind == "d" and re.fullmatch(r"[A-Z]", before):
-                label = "Column"
-            else:
-                numbered += 1
-                label, rank = f"Part{numbered}", 4
-            candidates.append((rank, c, k, label, new_field(label, sample, c, k, c, k)))
-
-    candidates.sort(key=lambda cand: cand[:3])
-    accepted: list[tuple[int, int, int, str, Field]] = []
-    for cand in candidates:
-        if any(a[3] == cand[3] for a in accepted):
-            continue
-        mine = ctx.observed(cand[4])
-        redundant = False
-        for other in accepted:
-            theirs = ctx.observed(other[4])
-            pairs = set(zip(mine, theirs))
-            if len(pairs) == len(set(mine)) == len(set(theirs)):
-                redundant = True  # one always comes with the other (Blue / FITC): a second label adds nothing
-                break
-        if not redundant:
-            accepted.append(cand)
-    accepted.sort(key=lambda cand: (cand[1], cand[2]))
-    return [cand[4] for cand in accepted]
-
-
 def remap(old: Context, new: Context, fields: list[Field]) -> tuple[list[Field], list[str]]:
     """Carries `fields` from one sample to another. Fields that have no such run in the new name are dropped.
     A pattern that would no longer fit the new name, or the one the field was made on, is widened to the
@@ -816,12 +723,11 @@ def detect(
     remove: str | None = None,
     rename: dict | None = None,
     edit: dict | None = None,
-    suggest: bool = False,
     generalize: bool = True,
     anchor: bool = True,
 ) -> dict:
     """One step of the Detect screen. `fields` are those the screen holds (as this function returned them);
-    at most one of `suggest`, `add` ({name, start, end}), `remove` (a name), `rename` ({from, to}) and `edit`
+    at most one of `add` ({name, start, end}), `remove` (a name), `rename` ({from, to}) and `edit`
     ({name, mode, prefix}) is applied, and `from_index` says which name the fields were made on when the
     sample has just changed. (A name with more parts than that one, which the pattern does not read, does not
     become the sample: the fields are widened to fit it and the sample stays, see `widen`.) Returns the sample,
@@ -848,11 +754,7 @@ def detect(
     else:
         current = [f for f in current if resolve(f, ctx.sample) is not None]
 
-    if suggest:
-        current = suggest_fields(ctx)
-        if not current:
-            notes.append("Nothing varies across these names, so there is nothing to suggest.")
-    elif add:
+    if add:
         current = add_field(ctx, current, str(add.get("name", "")).strip(), int(add["start"]), int(add["end"]))
     elif remove is not None:
         current = [f for f in current if f.name != remove]

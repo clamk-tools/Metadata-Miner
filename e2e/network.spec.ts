@@ -32,7 +32,7 @@ async function watchRefusals(page: Page): Promise<() => Promise<string[][]>> {
 async function giveNames(page: Page) {
   await page.getByLabel("Paste the names").fill(NAMES.join("\n"));
   await page.getByRole("button", { name: "Use these names" }).click();
-  await expect(page.getByTestId("matched")).toHaveText("Matched 4 of 4 names");
+  await expect(page.getByTestId("pattern")).toHaveText("No pattern yet."); // Python has answered
 }
 
 test("a whole session asks nothing of another host", async ({ page, context, baseURL }) => {
@@ -43,7 +43,8 @@ test("a whole session asks nothing of another host", async ({ page, context, bas
 
   await page.goto("./");
   await giveNames(page);
-  await page.getByRole("button", { name: "Remove Site" }).click();
+  await page.getByLabel("Pick a part").getByRole("button", { name: "A01", exact: true }).click();
+  await page.getByRole("button", { name: "Well", exact: true }).click();
   await expect(page.getByTestId("pattern")).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s\d+`);
   await page.getByRole("button", { name: "Copy this pattern" }).click();
   await page.getByRole("switch", { name: "Dark theme" }).click();

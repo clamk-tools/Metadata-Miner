@@ -41,7 +41,6 @@ def run(request_json: str) -> str:
             remove=request.get("remove"),
             rename=request.get("rename"),
             edit=request.get("edit"),
-            suggest=bool(request.get("suggest", False)),
             generalize=bool(request.get("generalize", True)),
             anchor=bool(request.get("anchor", True)),
         )

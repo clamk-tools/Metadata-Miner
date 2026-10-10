@@ -7,9 +7,9 @@ what the tool does for its user. `AGENTS.md` is where to start. `doc/CHANGING.md
 ## 1. In one paragraph
 
 A static page (React, built by Vite, served by GitHub Pages) with no backend. The user gives file names. The page
-hands the names to a Web Worker that runs Python (Pyodide). Python proposes labels and writes the regular
-expression. Each edit on the screen is one small request to Python and one full answer back. The page draws the
-answer and never builds a pattern itself.
+hands the names to a Web Worker that runs Python (Pyodide). The user labels parts of one name; Python writes the
+regular expression. Each edit on the screen is one small request to Python and one full answer back. The page draws
+the answer and never builds a pattern itself.
 
 ## 2. The pieces
 
@@ -28,7 +28,7 @@ answer and never builds a pattern itself.
 
 | Path | Role |
 |---|---|
-| `py/engine.py` | The engine: labels, pattern styles, the proposal, the answer. Standard library only, nothing about the browser |
+| `py/engine.py` | The engine: labels, pattern styles, the answer. Standard library only, nothing about the browser |
 | `py/glue.py` | What the worker calls: `set_names(json)` keeps the names, `run(json)` runs one step and answers in JSON |
 | `src/python/worker.ts` | Loads Pyodide and the Python files; answers requests one at a time, in order |
 | `src/python/client.ts` | The page's side of the worker: starts it (from a blob, section 9), engine status, `setNames`, `detect`, `restart` |
@@ -58,7 +58,7 @@ answer and never builds a pattern itself.
 2. **Names.** `namesFromText()` turns the pasted text into names (each line's file name, sorted, each once).
    `App.load` sends them to the worker (`client.setNames`) in the event handler, so they are there before the first
    question. It then bumps `run`, the React `key` of the Detect screen: each set of names gets a fresh screen.
-3. **First answer.** `DetectScreen` mounts and asks `{ suggest: true }`.
+3. **First answer.** `DetectScreen` mounts and asks `{}`: the sample, nothing labeled yet.
 4. **An edit.** Every action on the screen calls `call(patch)`, which sends
    `{ sample_index, fields, generalize, anchor, ...patch }`. `fields` are the ones of the last answer, unchanged.
    The patch holds at most one action. The answer replaces the screen's state as a whole.
@@ -158,7 +158,7 @@ A style chosen by hand sets `auto` to false and sticks.
 1. Build the `Context`. Check there are names and the sample has something to label.
 2. Read the fields from the request (`Field.from_wire`, which validates them).
 3. If the sample changed (`from_index`): try `widen`, else `remap` (5.4).
-4. Apply at most one action, in this order of priority: `suggest`, `add`, `remove`, `rename`, `edit`.
+4. Apply at most one action, in this order of priority: `add`, `remove`, `rename`, `edit`.
 5. `analyze`: for each field, where it sits, what the other names hold there, the pattern of every style, how
    many names each style reads, the style `auto` picks.
 6. `build_pattern`: the fields as named groups, with the unlabeled text between and around them (5.5). With
@@ -190,17 +190,7 @@ Both return notes, shown under the sample name.
   start of the name (`^` and everything before the labels), and if that is not enough to its end too (`$`).
   When neither reads the sample right, or *Anchor* is off, `detect` adds a note saying what it reads instead.
 
-### 5.6 The proposal (`suggest_fields`)
-
-For each part whose text varies across the names: if 95% of its values look like a known thing (`B03` a Well,
-`s1`/`f1` a Site, `t1` a Time, `z1` a Z, `plate1`/`p1` a Plate, `w1`/`c1` a Channel), the whole part gets that
-label; otherwise a part with at most 12 different word-like values is a Channel.
-Otherwise each varying run is labeled on its own: Row for a letter A to P, the label of the word before it
-(`_ALIAS`: `fld 4` is a Field), Column for digits after one capital, else `Part1`, `Part2`. A run where almost
-every name has its own value is an identifier and is skipped. A candidate that always changes together with one
-already accepted is redundant and is dropped.
-
-### 5.7 Speed
+### 5.6 Speed
 
 `parse`, `align`, `_runs` and `_shape` are cached with `lru_cache` at module level, each bounded to 100,000
 entries so a long session with many sets of names cannot grow without end. The worker keeps the module
@@ -270,13 +260,13 @@ holds across them.
 
 | Layer | Where | Runs with | Covers |
 |---|---|---|---|
-| Engine | `py/tests/test_engine.py` | `npm run test:py` | `detect()`: proposal, labeling, styles, sample change, options, the answer |
+| Engine | `py/tests/test_engine.py` | `npm run test:py` | `detect()`: labeling, styles, sample change, options, the answer |
 | Glue | `py/tests/test_glue.py` | `npm run test:py` | `set_names`, `run`, the two kinds of failure |
 | Units | `src/names/names.test.ts`, `src/detect/selection.test.ts` | `npm test` | Names from pasted text; click and drag selection |
 | Pairs | `test/pairs.test.ts` | `npm test` | The pairs of section 10.1 |
 | End to end | `e2e/detect.spec.ts`, `e2e/offline.spec.ts`, `e2e/network.spec.ts` | `npm run e2e` | The built site in Chromium, Firefox and WebKit, with the real Pyodide |
 
-- `test_engine.py` is grouped by topic (suggesting, labeling, styles, sample change, options, the answer, values in
+- `test_engine.py` is grouped by topic (a whole folder, labeling, styles, sample change, options, the answer, values in
   several words, reading the sample where it was labeled). A new test goes in its topic's section.
 - The end-to-end tests run on **`dist/`** served by `npm run preview` under `/ez.Regex/`. Build first, or
   they test the previous build. Pyodide is in `dist/`, so they need no network.
@@ -392,8 +382,10 @@ Each can be changed, but only on purpose: ask Clem first, then update this list.
 - **The page is two views in the family's frame**: the names step and the Detect screen. No example names, no
   routes, no stored state apart from the theme.
 - **The user selects exactly** (2026-10-10): a click is one character, a drag exactly what it covers. Nothing
-  grows a selection on its own, not even a double-click; a whole group is a button away (*Or pick a part*). The
-  proposal still labels whole runs.
+  grows a selection on its own, not even a double-click; a whole group is a button away (*Or pick a part*).
+- **No proposed labels** (2026-10-10): the screen opens with nothing labeled, and every label is the user's. The
+  engine used to propose labels from what varies (`suggest_fields`, the *Suggest again* button); it was removed,
+  code and tests, so the tool does only what the user asks.
 - **The pattern is copied, not loaded.** It is always written from labels; an existing pattern cannot be edited.
 - **Pyodide core only**, exact version pinned, served with the site. No extra Python package (each one is a
   download). Until 2026-10-02 the runtime came from jsDelivr; that was reversed because the CDN's code ran in

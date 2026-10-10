@@ -36,9 +36,8 @@ function reason(e: unknown): string {
 // The Detect screen (its cross goes back to the names). Two zones side by side: on the left the work (the sample name
 // shown large, with the label choices right under it, then the pattern those labels give), on the right the list of
 // what was produced (one card per labeled field). What the pattern reads from the rest of the names follows
-// underneath. Detect starts with its own proposal, so most of the time it is correcting rather than starting. The
-// pattern is written by Python (py/engine.py, in the worker), one request per edit; this component holds the fields
-// and sends them back.
+// underneath. The screen opens with nothing labeled: every label is the user's. The pattern is written by Python
+// (py/engine.py, in the worker), one request per edit; this component holds the fields and sends them back.
 export function DetectScreen({ client, starting, onClose }: Props) {
   const [answer, setAnswer] = useState<DetectAnswer | null>(null);
   const [options, setOptions] = useState<Options>({ generalize: true, anchor: true });
@@ -96,9 +95,10 @@ export function DetectScreen({ client, starting, onClose }: Props) {
 
   useEffect(() => {
     section.current?.focus({ preventScroll: true });
-    // The first question to Python, asked once when the screen opens: an effect is the place for it.
+    // The first question to Python, asked once when the screen opens (the sample, nothing labeled yet): an effect is
+    // the place for it.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void call({ suggest: true });
+    void call({});
     return () => {
       attempt.current += 1; // nothing that is still in flight may land after the screen is gone
     };
@@ -185,8 +185,8 @@ export function DetectScreen({ client, starting, onClose }: Props) {
           <h2 id="dt-title">Detect the pattern</h2>
           {/* The how-to is not on the page: it pops out from the "i" while the pointer or the keyboard focus is on it. */}
           <Info id="dt-help" label="How Detect works">
-            Label the parts of one file name that hold the metadata. Detect has already proposed labels; to change them, click a character of the name or
-            drag across several (the buttons under it take a whole part). The pattern and its matches below follow every change.
+            Label the parts of one file name that hold the metadata: click a character of the name or drag across several (the buttons under it take a
+            whole part), then choose what it is. The pattern and its matches below follow every change.
           </Info>
         </div>
         <span className="dt-working" role="status">
@@ -225,9 +225,6 @@ export function DetectScreen({ client, starting, onClose }: Props) {
                         </Icon>
                       </button>
                     </div>
-                    <button type="button" className="compact" disabled={busy} onClick={() => void call({ suggest: true })} title="Propose labels again from the names">
-                      Suggest again
-                    </button>
                   </div>
                 </div>
 

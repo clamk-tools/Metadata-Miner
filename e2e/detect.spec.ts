@@ -59,6 +59,32 @@ async function paste(page: Page, names: string[]) {
   await page.getByRole("button", { name: "Use these names" }).click();
 }
 
+// The screen opens with nothing labeled: once Python has answered, the pattern box says so.
+async function opened(page: Page) {
+  await expect(pattern(page)).toHaveText("No pattern yet.");
+}
+
+// Labels a whole part of the sample from its "pick a part" button, as a user would.
+async function label(page: Page, part: string, name: string) {
+  await page.getByLabel("Pick a part").getByRole("button", { name: part, exact: true }).click();
+  await page.getByRole("button", { name, exact: true }).click();
+}
+
+// The plate's first name (plate1_A01_s1_w1_DAPI.tif) labeled part by part: the pattern of the Python tests.
+async function labelPlate(page: Page) {
+  await opened(page);
+  for (const [part, name] of [["plate1", "Plate"], ["A01", "Well"], ["s1", "Site"], ["DAPI", "Channel"]]) await label(page, part, name);
+  await expect(pattern(page)).toHaveText(PLATE_PATTERN);
+}
+
+// FOUR's first name labeled: Well on A01, Site on s1.
+async function labelFour(page: Page) {
+  await opened(page);
+  await label(page, "A01", "Well");
+  await label(page, "s1", "Site");
+  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`);
+}
+
 test("the page opens on the names step, with nothing else to get through", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "ez.Regex" })).toBeVisible();
   await expect(page.getByText("File name in, regex out")).toBeVisible();
@@ -69,12 +95,20 @@ test("the page opens on the names step, with nothing else to get through", async
   await expect(page.getByRole("heading", { name: "Detect the pattern" })).toHaveCount(0);
 });
 
-test("a plate of names gets the pattern Python gives, and Copy puts it on the clipboard", async ({ page, context, browserName }) => {
+test("the screen opens with nothing labeled, and no button to propose labels", async ({ page }) => {
+  await paste(page, FOUR);
+  await opened(page);
+
+  await expect(page.getByText("Labels · 0")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Suggest/ })).toHaveCount(0);
+});
+
+test("a plate labeled by hand gets the pattern Python gives, and Copy puts it on the clipboard", async ({ page, context, browserName }) => {
   if (browserName === "chromium") await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
   await paste(page, PLATE_NAMES);
+  await labelPlate(page);
 
-  await expect(pattern(page)).toHaveText(PLATE_PATTERN);
   await expect(matched(page)).toHaveText("Matched 432 of 435 names");
   await expect(page.getByText("1 of 435")).toBeVisible();
 
@@ -91,9 +125,7 @@ test("a plate of names gets the pattern Python gives, and Copy puts it on the cl
 test("pasted names are labeled by hand: pick a part, click the name, choose what each is", async ({ page }) => {
   await paste(page, FOUR.map((name) => `C:\\screens\\plate 1\\${name}`)); // full paths: the file name is kept (privacy-ok: invented paths)
 
-  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`); // what Detect proposes
-  await page.getByRole("button", { name: "Clear all" }).click();
-  await expect(pattern(page)).toHaveText("No pattern yet.");
+  await opened(page);
 
   await page.getByLabel("Pick a part").getByRole("button", { name: "A01" }).click();
   await page.getByRole("button", { name: "Well", exact: true }).click();
@@ -109,9 +141,7 @@ test("pasted names are labeled by hand: pick a part, click the name, choose what
 
 test("a drag across the name selects exactly what it covers, and Escape drops the selection", async ({ page }) => {
   await paste(page, FOUR);
-  await expect(matched(page)).toHaveText("Matched 4 of 4 names");
-  await page.getByRole("button", { name: "Clear all" }).click();
-  await expect(pattern(page)).toHaveText("No pattern yet.");
+  await opened(page); // the name takes no press while Python works
 
   const from = await page.locator('[data-i="2"]').boundingBox(); // the "1" of A01
   const to = await page.locator('[data-i="4"]').boundingBox(); // the "s" of s1
@@ -128,9 +158,7 @@ test("a drag across the name selects exactly what it covers, and Escape drops th
 test("a click selects one character, even inside a group, and twice is still one", async ({ page }) => {
   // the wells are written with the letter O (BO3): the row letter and the O are one group
   await paste(page, ["plate1_BO3_f01.tif", "plate1_CO4_f02.tif", "plate1_DO5_f01.tif", "plate2_BO3_f02.tif"]);
-  await expect(matched(page)).toBeVisible();
-  await page.getByRole("button", { name: "Clear all" }).click();
-  await expect(pattern(page)).toHaveText("No pattern yet."); // the name takes no press while Python works
+  await opened(page); // the name takes no press while Python works
 
   await page.locator('[data-i="7"]').dblclick(); // the B of BO3, pressed twice: still the B alone
   await expect(page.getByText("Label B as")).toBeVisible();
@@ -142,6 +170,7 @@ test("a click selects one character, even inside a group, and twice is still one
 
 test("an unmatched name becomes the sample and widens the pattern", async ({ page }) => {
   await paste(page, PLATE_NAMES);
+  await labelPlate(page);
   await expect(matched(page)).toHaveText("Matched 432 of 435 names");
 
   await page.getByRole("button", { name: "plate1_B3_s2_w1_DAPI.tif" }).click();
@@ -152,7 +181,7 @@ test("an unmatched name becomes the sample and widens the pattern", async ({ pag
 
 test("a field can be renamed and its style changed, and a bad name is refused with Python's message", async ({ page }) => {
   await paste(page, FOUR);
-  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`);
+  await labelFour(page);
 
   await page.getByLabel("Name of the field labeled A01").fill("Position");
   await page.getByLabel("Name of the field labeled A01").press("Enter");
@@ -169,19 +198,17 @@ test("a field can be renamed and its style changed, and a bad name is refused wi
 
 test("the sample arrows move through the names and the options change the pattern", async ({ page }) => {
   await paste(page, FOUR);
+  await opened(page);
   await expect(page.getByText("1 of 4")).toBeVisible();
+  await label(page, "A01", "Well"); // one label: the anchor is what keeps "_s1" beside it
 
   await page.getByRole("button", { name: "Next name" }).click();
   await expect(page.getByText("2 of 4")).toBeVisible();
   await expect(page.getByLabel("Pick a part").getByRole("button", { name: "A02" })).toBeVisible();
+  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s\d+`); // the label followed to A02
 
-  await page.getByRole("button", { name: "Remove Site" }).click(); // one label left: the anchor is what keeps "_s1" beside it
-  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s\d+`);
   await page.getByLabel("Anchor with the neighbouring part on each side").uncheck();
   await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})`);
-
-  await page.getByRole("button", { name: "Suggest again" }).click();
-  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`);
 });
 
 test("text that holds no file name says so", async ({ page }) => {
@@ -199,12 +226,11 @@ test("every name is kept whatever its extension, a repeated one once, and the cr
   await expect(page.getByLabel("Paste the names")).toHaveValue(/A01_s1\.nd2/); // what was pasted is still there
 });
 
-test("a single name says why nothing is proposed", async ({ page }) => {
+test("a single name says it has nothing to compare with", async ({ page }) => {
   await paste(page, ["AS_09125_050118150001_A03f01d0.tif"]);
 
   await expect(page.getByText("One name only")).toBeVisible();
-  await expect(page.getByText("Nothing varies across these names, so there is nothing to suggest.")).toBeVisible();
-  await expect(pattern(page)).toHaveText("No pattern yet.");
+  await opened(page);
   await expect(page.getByRole("button", { name: "Copy this pattern" })).toBeDisabled();
 });
 
@@ -265,7 +291,7 @@ test("the header links back to all the Clamk tools", async ({ page }) => {
 
 test("a label already in use can be chosen for another part: it moves there", async ({ page }) => {
   await paste(page, FOUR);
-  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`); // Well is on A01, Site on s1
+  await labelFour(page); // Well is on A01, Site on s1
 
   await page.getByLabel("Pick a part").getByRole("button", { name: "s1" }).click();
   await expect(page.getByRole("button", { name: "Well", exact: true })).toHaveAttribute("title", "Move the Well label here");
@@ -315,11 +341,10 @@ test("the Pattern title has an i that lists what the symbols mean", async ({ pag
 
 test("unticking and re-ticking an option gives the same pattern, labels and values back", async ({ page }) => {
   await paste(page, PLATE_NAMES);
-  await expect(pattern(page)).toHaveText(PLATE_PATTERN);
+  await opened(page);
 
   const anchor = page.getByLabel("Anchor with the neighbouring part on each side");
   const numbers = page.getByLabel("Allow fixed text to vary in its numbers");
-  await page.getByRole("button", { name: "Clear all" }).click();
   await page.getByLabel("Pick a part").getByRole("button", { name: "DAPI" }).click();
   await page.getByRole("button", { name: "Channel", exact: true }).click();
   const anchored = String.raw`w\d+_(?P<Channel>[A-Za-z0-9]+)`;
@@ -340,8 +365,12 @@ test("unticking and re-ticking an option gives the same pattern, labels and valu
 
 test("a value that is two words in some names is read, and the odd name left widens the pattern when clicked", async ({ page }) => {
   await paste(page, DYES);
+  await opened(page);
+  await label(page, "A", "Row"); // the first name: A - 1( wv Blue - FITC).tif
+  await label(page, "1", "Column");
+  await label(page, "Blue", "Channel");
 
-  // Far Red is in 4 names of 24: the proposed Channel reads several words, and every name matches
+  // Far Red is in 4 names of 24: Channel reads several words, and every name matches
   await expect(page.getByTestId("matched")).toHaveText("Matched 24 of 24 names");
   await expect(page.getByLabel("Pattern style of Channel")).toContainText("Auto (several words) · 24/24");
   await expect(page.getByLabel("Pattern style of Channel").locator("option[value=words]")).toHaveText("Several words · 24/24"); // names from Python
@@ -361,13 +390,7 @@ test("a value that is two words in some names is read, and the odd name left wid
 
 test("the keyboard focus stays on the control that was used while Python answers", async ({ page }) => {
   await paste(page, FOUR);
-  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`);
-
-  const again = page.getByRole("button", { name: "Suggest again" });
-  await again.focus();
-  await page.keyboard.press("Enter");
-  await expect(again).toBeEnabled();
-  await expect(again).toBeFocused();
+  await labelFour(page);
 
   const anchor = page.getByLabel("Anchor with the neighbouring part on each side");
   await anchor.focus();
@@ -393,11 +416,18 @@ test("the keyboard focus stays on the control that was used while Python answers
   await page.keyboard.press("Enter");
   await expect(page.getByText("Labels · 1")).toBeVisible();
   await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest(".dt"))).toBe(true);
+
+  // a button still there after the answer keeps the focus
+  const next = page.getByRole("button", { name: "Next name" });
+  await next.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("2 of 4")).toBeVisible();
+  await expect(next).toBeFocused();
 });
 
 test("a quick answer does not dim the screen", async ({ page }) => {
   await paste(page, FOUR);
-  await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`);
+  await labelFour(page);
 
   // The moment Python is asked, every control is disabled; it is not drawn dimmed before 400 ms.
   await page.evaluate(() => {
@@ -408,7 +438,7 @@ test("a quick answer does not dim the screen", async ({ page }) => {
       if (copy.disabled) seen.push(getComputedStyle(copy).opacity);
     }).observe(copy, { attributes: true, attributeFilter: ["disabled"] });
   });
-  await page.getByRole("button", { name: "Suggest again" }).click();
+  await page.getByLabel("Allow fixed text to vary in its numbers").click();
   await expect(page.getByRole("button", { name: "Copy this pattern" })).toBeEnabled();
   expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen)).toEqual(["1"]);
   await expect(page.getByRole("button", { name: "Copy this pattern" })).toBeEnabled();
@@ -416,9 +446,7 @@ test("a quick answer does not dim the screen", async ({ page }) => {
 
 test("a pattern that would read the sample in the wrong place is tied to the start of the name", async ({ page }) => {
   await paste(page, ["s1_s2_s3.tif", "s3_x2_w2.tif", "x2_s1_w1.tif"]); // the text before the last 3 looks like it
-  await expect(matched(page)).toBeVisible();
-  await page.getByRole("button", { name: "Clear all" }).click();
-  await expect(pattern(page)).toHaveText("No pattern yet."); // the name takes no press while Python works
+  await opened(page);
 
   await page.getByLabel("Pick a part").getByRole("button", { name: "s3" }).click(); // the whole group, from its button
   await page.getByRole("button", { name: "Site", exact: true }).click();

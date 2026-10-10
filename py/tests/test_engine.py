@@ -54,13 +54,24 @@ def _values(result, name):
     return [row["values"][name] for row in result["rows"]]
 
 
-# ---- suggesting -----------------------------------------------------------------------------------------------
+def _plate(**options):
+    """The plate's sample labeled part by part, as a user would: Plate, Well, Site, Channel."""
+    return _label(PLATES, B03, ("plate1", "Plate"), ("B03", "Well"), ("s2", "Site"), ("DAPI", "Channel"), **options)
 
 
-def test_suggest_finds_plate_well_site_and_channel_and_writes_the_pattern():
-    result = detect(PLATES, sample_index=B03, suggest=True)
+# ---- a whole folder ------------------------------------------------------------------------------------------
 
-    assert [f["name"] for f in result["fields"]] == ["Plate", "Well", "Site", "Channel"]
+
+def test_nothing_is_labeled_until_the_user_labels_it():
+    result = detect(PLATES, sample_index=B03)
+
+    assert result["fields"] == [] and result["pattern"] == "" and result["notes"] == []
+    assert result["sample"] == "plate1_B03_s2_w1_DAPI.tif" and result["tokens"]  # what the screen needs to start
+
+
+def test_a_plate_labeled_part_by_part_gets_the_pattern_that_reads_it():
+    result = _plate()
+
     assert result["pattern"] == r"(?P<Plate>plate\d+)_(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)_w\d+_(?P<Channel>[A-Za-z0-9]+)"
     assert result["matched"] == 432 and result["unmatched_count"] == 3
     assert {u["name"] for u in result["unmatched"]} == {
@@ -68,34 +79,16 @@ def test_suggest_finds_plate_well_site_and_channel_and_writes_the_pattern():
     }
 
 
-def test_suggest_reads_the_dye_names_style_with_spaces_dashes_and_brackets():
+def test_the_dye_names_style_with_spaces_dashes_and_brackets_is_read():
     names = _fitc_names()
-    result = detect(names, suggest=True)
+    text = names[0]  # A - 01(fld 1 wv Blue - FITC).tif
+    fld = text.index("fld 1") + 4
+    labeled = _label(names, 0, ("A", "Row"), ("01", "Column"), ("Blue", "Channel"))
+    result = detect(names, fields=labeled["fields"], add={"name": "Field", "start": fld, "end": fld + 1})
 
-    assert [f["name"] for f in result["fields"]] == ["Row", "Column", "Field", "Channel"]
     assert result["matched"] == len(names)
-    assert _fields(result)["Channel"]["values"] == ["Blue", "Green", "Red"]  # FITC / dsRed / Cy5 say the same thing
-    first = result["rows"][0]["values"]
-    assert first == {"Row": "A", "Column": "01", "Field": "1", "Channel": "Blue"}
-
-
-def test_suggest_leaves_out_identifier_like_parts():
-    # BBBC039 style: the well and site vary meaningfully, the GUID after w1 is different in every name
-    names = [
-        f"IXMtest_{row}{col:02d}_s{site}_w1{uuid.uuid5(uuid.NAMESPACE_DNS, f'{row}{col}{site}').hex[:8].upper()}.tif"
-        for row in "ABCD" for col in range(1, 9) for site in (1, 2, 3)
-    ]
-    result = detect(names, suggest=True)
-
-    assert [f["name"] for f in result["fields"]] == ["Well", "Site"]
-    assert result["matched"] == len(names)
-
-
-def test_suggest_with_a_single_name_says_nothing_varies():
-    result = detect(["AS_09125_050118150001_A03f01d0.tif"], suggest=True)
-
-    assert result["fields"] == [] and result["pattern"] == ""
-    assert result["notes"] == ["Nothing varies across these names, so there is nothing to suggest."]
+    assert _fields(result)["Channel"]["values"] == ["Blue", "Green", "Red"]
+    assert result["rows"][0]["values"] == {"Row": "A", "Column": "01", "Field": "1", "Channel": "Blue"}
 
 
 # ---- labeling by hand -----------------------------------------------------------------------------------------
@@ -282,11 +275,11 @@ def test_when_no_style_fits_enough_names_auto_keeps_the_tightest_of_those_that_f
 
 
 def test_switching_to_an_odd_name_widens_the_pattern_to_fit_both_and_keeps_it():
-    suggested = detect(PLATES, sample_index=B03, suggest=True)
-    assert suggested["unmatched_count"] == 3
+    labeled = _plate()
+    assert labeled["unmatched_count"] == 3
 
     b3 = PLATES.index("plate1_B3_s2_w1_DAPI.tif")
-    at_b3 = detect(PLATES, sample_index=b3, from_index=B03, fields=suggested["fields"])
+    at_b3 = detect(PLATES, sample_index=b3, from_index=B03, fields=labeled["fields"])
     assert at_b3["sample"] == "plate1_B3_s2_w1_DAPI.tif"
     assert _fields(at_b3)["Well"]["fits"] and at_b3["matched"] == 434  # the shape "B3" gives also reads B03 and C7
     assert at_b3["notes"] == [r"Well now reads [A-Z]\d+, which fits B3 and B03."]  # the change is reported
@@ -365,7 +358,7 @@ def test_numbers_in_fixed_text_stay_exact_when_generalizing_is_off():
 
 
 def test_the_answer_describes_the_sample_each_field_and_what_the_folder_gives():
-    result = detect(PLATES, sample_index=B03, suggest=True)
+    result = _plate()
 
     assert result["sample"] == "plate1_B03_s2_w1_DAPI.tif" and result["sample_index"] == B03
     assert result["total"] == len(PLATES)
@@ -385,7 +378,7 @@ def test_the_answer_describes_the_sample_each_field_and_what_the_folder_gives():
 
 
 def test_what_the_screen_sends_back_is_accepted_unchanged():
-    first = detect(PLATES, sample_index=B03, suggest=True)
+    first = _plate()
     second = detect(PLATES, sample_index=B03, fields=first["fields"])  # with every extra key the answer carries
 
     assert second["pattern"] == first["pattern"] and second["fields"] == first["fields"]
@@ -411,9 +404,9 @@ def test_detect_reads_only_the_names_so_a_huge_folder_is_fast():
     names = [f"p{p}_{row}{col:02d}_s{s}_w1.tif" for p in range(1, 6) for row in "ABCDEFGH" for col in range(1, 13) for s in range(1, 26)]
     assert len(names) == 12000
 
-    result = detect(names, suggest=True)
+    result = _label(names, 0, ("A01", "Well"), ("s1", "Site"))
 
-    assert {f["name"] for f in result["fields"]} >= {"Well", "Site"} and result["matched"] == len(names)
+    assert _fields(result)["Well"]["distinct"] == 96 and result["matched"] == len(names)
 
 
 def test_a_value_that_holds_a_superscript_digit_is_listed_like_any_other():
@@ -499,11 +492,10 @@ def test_a_longer_name_the_pattern_reads_already_becomes_the_sample_as_before():
     assert "different number of parts" in moved["notes"][0]
 
 
-def test_suggest_labels_a_channel_that_is_two_words_in_some_names():
+def test_a_channel_labeled_where_it_is_one_word_reads_the_two_word_values_too():
     names = _dye_names()
-    result = detect(names, suggest=True)
+    result = _label(names, "B - 2( wv Blue - FITC).tif", ("Blue", "Channel"))
 
-    assert "Channel" in [f["name"] for f in result["fields"]]
     assert _fields(result)["Channel"]["values"] == ["Blue", "Far Red", "Green", "Red"]
     assert result["matched"] == len(names)
     assert result["pattern"].endswith(r" - [^_\-.\s]+(?: [^_\-.\s]+)*")  # the filter is not labeled: read loosely, two words or one

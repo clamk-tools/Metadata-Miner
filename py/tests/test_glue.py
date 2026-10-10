@@ -22,7 +22,7 @@ def _run(**request):
 
 def test_set_names_keeps_the_names_and_says_how_many():
     assert glue.set_names(json.dumps(["a_1.tif", "a_2.tif"])) == 2
-    assert _run(suggest=True)["answer"]["total"] == 2
+    assert _run()["answer"]["total"] == 2
 
 
 @pytest.mark.parametrize("bad", ['"a.tif"', "[1, 2]", '{"a": 1}'])
@@ -32,19 +32,20 @@ def test_set_names_refuses_what_is_not_a_list_of_text(bad):
 
 
 def test_run_gives_the_answer_detect_gives():
-    reply = _run(suggest=True)
+    where = {"name": "Well", "start": 0, "end": 3}
+    reply = _run(add=where)
 
     assert reply["ok"] is True
-    assert reply["answer"] == detect(NAMES, suggest=True)
-    assert [f["name"] for f in reply["answer"]["fields"]] == ["Well", "Site", "Channel"]
+    assert reply["answer"] == detect(NAMES, add=where)
+    assert [f["name"] for f in reply["answer"]["fields"]] == ["Well"]
 
 
-def test_run_suggests_then_edits_with_the_fields_sent_back():
-    first = _run(suggest=True)["answer"]
+def test_run_labels_then_edits_with_the_fields_sent_back():
+    first = _run(add={"name": "Channel", "start": 7, "end": 9})["answer"]  # w1
 
     renamed = _run(fields=first["fields"], rename={"from": "Channel", "to": "Wave"})["answer"]
 
-    assert [f["name"] for f in renamed["fields"]] == ["Well", "Site", "Wave"]
+    assert [f["name"] for f in renamed["fields"]] == ["Wave"]
     assert renamed["matched"] == len(NAMES)
 
 
@@ -73,7 +74,7 @@ def test_a_problem_the_user_can_fix_comes_back_as_its_message():
 def test_no_names_comes_back_as_its_message():
     glue.set_names("[]")
 
-    reply = _run(suggest=True)
+    reply = _run()
 
     assert reply == {"ok": False, "error": "there are no image names to learn from"}
 
@@ -90,7 +91,7 @@ def test_a_bug_is_reported_as_unexpected(monkeypatch):
 
     monkeypatch.setattr(glue, "detect", broken)
 
-    reply = _run(suggest=True)
+    reply = _run()
 
     assert reply["ok"] is False and reply["unexpected"] is True
     assert reply["error"] == "AssertionError: field Well does not sit in the sample"
@@ -102,7 +103,7 @@ def test_a_key_or_type_error_is_a_bug_not_a_message_for_the_user(monkeypatch):
 
     monkeypatch.setattr(glue, "detect", broken)
 
-    reply = _run(suggest=True)
+    reply = _run()
 
     assert reply == {"ok": False, "unexpected": True, "error": "KeyError: 'Well'"}
 
