@@ -7,7 +7,8 @@ named-group pattern (CellProfiler's convention), read from each name with `re.se
 
 A name is split into **parts** at `_ - . space`, and each part into **runs** (a run is a block of letters, of
 digits, or of anything else: `08(fld` is `08`, `(`, `fld`). A **field** is a stretch of the sample from one run
-to another, so it follows the same place in the other names even when they differ in length (`B03` / `B3`).
+to another, so it follows the same place in the other names even when they differ in length (`B03` / `B3`). It may
+leave out characters at the start of its first run and at the end of its last (`B` of `BO3`, `001` of `001001`).
 A name with more parts than the sample, because one of its values holds a separator (`Far Red` where the sample
 has `Blue`), is compared too when there is only one way to line it up with the sample (`align`).
 Everything is plain `re` and the standard library: the page runs this file as it is, in Pyodide, behind `glue.py`.
@@ -161,7 +162,7 @@ def align(name: str, sample_name: str, fixed: tuple[str | None, ...], shapes: tu
 
 
 def tokens(parsed: Parsed) -> list[dict]:
-    """The sample cut into runs and the separators between them: what a drag can snap to on the screen."""
+    """The sample cut into runs and the separators between them: what the "pick a part" buttons are made of."""
     out: list[dict] = []
     at = 0
     for index, part in enumerate(parsed.parts):
@@ -180,9 +181,10 @@ def tokens(parsed: Parsed) -> list[dict]:
 
 @dataclass
 class Field:
-    """A stretch of the sample from run `k0` of part `s_seg` to run `k1` of part `e_seg`. `s0` / `e1` mean "from
-    the start of the part" / "to the end of the part" and follow the part when the sample is another name.
-    `mode` is the pattern style the user chose, unless `auto`."""
+    """A stretch of the sample from run `k0` of part `s_seg` to run `k1` of part `e_seg`, leaving out the first
+    `c0` characters of run `k0` and the last `c1` of run `k1` (both 0 for whole runs: `B` of `BO3` is `c1` 1). `s0` /
+    `e1` mean "from the start of the part" / "to the end of the part" and follow the part when the sample is
+    another name. `mode` is the pattern style the user chose, unless `auto`."""
 
     name: str
     s_seg: int
@@ -194,6 +196,8 @@ class Field:
     prefix: bool
     auto: bool = True
     mode: str = "shape"
+    c0: int = 0
+    c1: int = 0
 
     @classmethod
     def from_wire(cls, raw: dict) -> "Field":
@@ -203,7 +207,10 @@ class Field:
                 name=name, s_seg=int(raw["s_seg"]), k0=int(raw["k0"]), e_seg=int(raw["e_seg"]), k1=int(raw["k1"]),
                 s0=bool(raw["s0"]), e1=bool(raw["e1"]), prefix=bool(raw.get("prefix", name in NUMERIC_NAMES)),
                 auto=bool(raw.get("auto", True)), mode=str(raw.get("mode", "shape")),
+                c0=int(raw.get("c0", 0)), c1=int(raw.get("c1", 0)),
             )
+            if field.c0 < 0 or field.c1 < 0:
+                raise ValueError("c0 and c1 cannot be negative")
         except (KeyError, TypeError, ValueError) as exc:
             raise ValueError(f"malformed field {raw!r}: {exc}") from exc
         check_name(field.name)
@@ -215,6 +222,7 @@ class Field:
         return {
             "name": self.name, "s_seg": self.s_seg, "k0": self.k0, "e_seg": self.e_seg, "k1": self.k1,
             "s0": self.s0, "e1": self.e1, "prefix": self.prefix, "auto": self.auto, "mode": self.mode,
+            "c0": self.c0, "c1": self.c1,
         }
 
 
@@ -225,7 +233,8 @@ def check_name(name: str) -> str:
 
 
 def resolve(field: Field, parsed: Parsed) -> tuple[int, int] | None:
-    """Where `field` sits in `parsed` as (start, end), or None when this name has no such run."""
+    """Where `field` sits in `parsed` as (start, end), or None when this name has no such run, or a run too short
+    for the characters the field leaves out."""
     parts = parsed.parts
     if field.s_seg >= len(parts) or field.e_seg >= len(parts):
         return None
@@ -234,7 +243,9 @@ def resolve(field: Field, parsed: Parsed) -> tuple[int, int] | None:
     k1 = _word_bounds(last)[1] if field.e1 else field.k1
     if k0 >= len(first.runs) or not 0 <= k1 < len(last.runs):
         return None
-    start, end = first.start + first.runs[k0][0], last.start + last.runs[k1][1]
+    if field.c0 >= first.runs[k0][1] - first.runs[k0][0] or field.c1 >= last.runs[k1][1] - last.runs[k1][0]:
+        return None
+    start, end = first.start + first.runs[k0][0] + field.c0, last.start + last.runs[k1][1] - field.c1
     return (start, end) if end > start else None
 
 
@@ -253,11 +264,12 @@ def _word_bounds(part: Part) -> tuple[int, int]:
     return found
 
 
-def new_field(name: str, sample: Parsed, s_seg: int, k0: int, e_seg: int, k1: int) -> Field:
+def new_field(name: str, sample: Parsed, s_seg: int, k0: int, e_seg: int, k1: int, c0: int = 0, c1: int = 0) -> Field:
     return Field(
         name=check_name(name), s_seg=s_seg, k0=k0, e_seg=e_seg, k1=k1,
-        s0=k0 == _word_bounds(sample.parts[s_seg])[0], e1=k1 == _word_bounds(sample.parts[e_seg])[1],
-        prefix=name in NUMERIC_NAMES,
+        s0=c0 == 0 and k0 == _word_bounds(sample.parts[s_seg])[0],
+        e1=c1 == 0 and k1 == _word_bounds(sample.parts[e_seg])[1],
+        prefix=name in NUMERIC_NAMES, c0=c0, c1=c1,
     )
 
 
@@ -328,7 +340,7 @@ class Context:
     def observed(self, field: Field) -> list[str | None]:
         """What `field` holds in every name laid out like the sample (None where the name has no such run).
         Cached: one request asks this of the same field several times."""
-        key = (field.s_seg, field.k0, field.e_seg, field.k1, field.s0, field.e1)
+        key = (field.s_seg, field.k0, field.e_seg, field.k1, field.s0, field.e1, field.c0, field.c1)
         if key not in self._observed:
             # inside one part, the value depends on that part's text only, and a folder has few different ones
             one_part = field.s_seg == field.e_seg < len(self.sample.parts)
@@ -422,23 +434,27 @@ def core_pattern(mode: str, core: str, observed: list[str], inner: tuple[str, ..
     return "".join(out)
 
 
-def _token_pattern(ctx: Context, token: dict) -> str:
+def _token_pattern(ctx: Context, token: dict, lo: int = 0, hi: int = 0) -> str:
     """Unlabeled text around a field: separators stay as they are, letters stay when every name agrees and
-    become a class when they vary, digits become \\d+ when the option is on."""
+    become a class when they vary, digits become \\d+ when the option is on. `lo` and `hi`: the characters of the
+    run left out at its start and its end, which a field holds (the `O` of `BO` when only `B` is labeled)."""
+    text = token["text"][lo:len(token["text"]) - hi]
     if token["sep"]:
-        return esc(token["text"])
-    kind = _run_type(token["text"])
+        return esc(text)
+    kind = _run_type(text)
     if kind == "d":
-        return r"\d+" if ctx.generalize else esc(token["text"])
+        return r"\d+" if ctx.generalize else esc(text)
     if kind != "a":
-        return esc(token["text"])
-    seen = ctx.letters_seen(token["seg"], token["k"])
-    if all(v == token["text"] for v in seen):
-        return esc(token["text"])
+        return esc(text)
+    seen = [v[lo:len(v) - hi] for v in ctx.letters_seen(token["seg"], token["k"])]
+    if all(v == text for v in seen):
+        return esc(text)
     return _letter_class(seen, plus=True)
 
 
 def _gap_pattern(ctx: Context, start: int, end: int) -> str:
+    if end <= start:
+        return ""  # two fields side by side, even inside one run (Row 001 and Column 001 of 001001)
     out, done = [], set()
     for token in tokens(ctx.sample):
         if token["end"] <= start or token["start"] >= end:
@@ -450,7 +466,7 @@ def _gap_pattern(ctx: Context, start: int, end: int) -> str:
                 done.add(token["seg"])
                 out.append(r"[^_\-.\s]+" + _more(ctx.inner(token["seg"]), r"[^_\-.\s]+"))
                 continue
-        out.append(_token_pattern(ctx, token))
+        out.append(_token_pattern(ctx, token, max(start - token["start"], 0), max(token["end"] - end, 0)))
     return "".join(out)
 
 
@@ -596,20 +612,23 @@ def _pieces(ctx: Context, items: list[Item], from_start: bool = False, to_end: b
 
 
 def add_field(ctx: Context, fields: list[Field], name: str, start: int, end: int) -> list[Field]:
-    """Labels the stretch [start, end) of the sample. Every run the stretch touches is included, so its ends
-    snap to whole groups of letters or digits. A field already there, or already called `name`, is replaced."""
+    """Labels the stretch [start, end) of the sample, exactly: only separators at its ends are left out, so one
+    character can be labeled (`B` of `BO3`). A field already there, or already called `name`, is replaced."""
     check_name(name)
-    touched = [t for t in tokens(ctx.sample) if not t["sep"] and t["end"] > start and t["start"] < max(end, start + 1)]
+    end = max(end, start + 1)
+    touched = [t for t in tokens(ctx.sample) if not t["sep"] and t["end"] > start and t["start"] < end]
     if not touched:
         raise ValueError("select part of the name (letters or digits), not just a separator")
     first, last = touched[0], touched[-1]
+    start, end = max(start, first["start"]), min(end, last["end"])
     kept = []
     for field in fields:
         found = resolve(field, ctx.sample)
-        overlaps = found is not None and found[0] < last["end"] and found[1] > first["start"]
+        overlaps = found is not None and found[0] < end and found[1] > start
         if not overlaps and field.name != name:
             kept.append(field)
-    kept.append(new_field(name, ctx.sample, first["seg"], first["k"], last["seg"], last["k"]))
+    kept.append(new_field(name, ctx.sample, first["seg"], first["k"], last["seg"], last["k"],
+                          c0=start - first["start"], c1=last["end"] - end))
     return kept
 
 

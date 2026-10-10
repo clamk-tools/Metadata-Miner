@@ -139,15 +139,64 @@ def test_a_part_that_some_names_build_differently_is_matched_loosely_around_a_fi
     assert only_letter["pattern"] == r"plate\d+_(?P<Row>[A-Z])[^_\-.\s]+_s\d+"
 
 
-def test_a_selection_can_span_separators_and_snaps_to_whole_groups():
+def test_a_selection_can_span_separators_and_is_taken_exactly():
     text = PLATES[B03]
     start = text.index("B03")
-    # from the middle of "03" to the middle of "s2" (between its "s" and its "2"): every group the drag touches is
-    # included, so it takes the whole "03", the underscore, and the "s" but not the "2" it never reached
+    # from the "3" of "03" to the "s" of "s2": exactly those characters, the "0" before and the "2" after left out
     result = detect(PLATES, sample_index=B03, add={"name": "WellSite", "start": start + 2, "end": text.index("s2") + 1})
 
     field = _fields(result)["WellSite"]
-    assert field["text"] == "03_s" and field["pattern"] == r"\d{2}_[a-z]"  # a lone letter is a variable
+    assert field["text"] == "3_s" and field["pattern"] == r"\d+_[a-z]"  # a lone digit may grow; a lone letter varies
+    assert "3_s" in field["values"] and not any(v.startswith("0") for v in field["values"])  # never the "0" before
+
+
+def test_separators_at_the_ends_of_a_selection_are_left_out():
+    text = PLATES[B03]
+    start = text.index("_B03_")
+
+    result = detect(PLATES, sample_index=B03, add={"name": "Well", "start": start, "end": start + 5})
+
+    assert _fields(result)["Well"]["text"] == "B03"
+
+
+def _letter_o_names():
+    """Wells written with the letter O where a zero is meant (BO3): the row letter and the O are one run."""
+    return ["plate1_BO3_f01_Blue.tif", "plate1_CO4_f02_Blue.tif", "plate1_DO5_f01_Red.tif", "plate2_BO3_f02_Red.tif"]
+
+
+def test_one_character_of_a_run_can_be_labeled():
+    names = _letter_o_names()
+    b = names[0].index("BO3")
+
+    row = detect(names, add={"name": "Row", "start": b, "end": b + 1})  # the B only, not the BO it sits in
+    both = detect(names, fields=row["fields"], add={"name": "Column", "start": b + 2, "end": b + 3})
+
+    assert both["pattern"] == r"plate\d+_(?P<Row>[A-Z])O(?P<Column>\d+)_f\d+"  # the O left between them is fixed text
+    assert _fields(both)["Row"]["values"] == ["B", "C", "D"] and _fields(both)["Column"]["values"] == ["3", "4", "5"]
+    assert both["matched"] == len(names)
+
+
+def test_two_fields_can_share_one_run_of_digits():
+    names = [f"{row:03d}{col:03d}-1-001001001.tif" for row in (1, 2, 12) for col in (1, 5, 24)]  # row, then column
+
+    row = detect(names, add={"name": "Row", "start": 0, "end": 3})
+    both = detect(names, fields=row["fields"], add={"name": "Column", "start": 3, "end": 6})
+
+    assert both["pattern"] == r"(?P<Row>\d{3})(?P<Column>\d{3})-\d+"
+    assert _fields(both)["Row"]["values"] == ["001", "002", "012"] and _fields(both)["Column"]["values"] == ["001", "005", "024"]
+    assert both["matched"] == len(names) and both["notes"] == []
+
+    moved = detect(names, sample_index=4, from_index=both["sample_index"], fields=both["fields"])  # another sample
+    assert {f["name"]: f["text"] for f in moved["fields"]} == {"Row": "002", "Column": "005"}
+
+
+def test_a_field_sent_without_c0_and_c1_takes_whole_runs():
+    names = _letter_o_names()
+    b = names[0].index("BO3")
+    field = dict(_fields(detect(names, add={"name": "Row", "start": b, "end": b + 1}))["Row"])
+    del field["c0"], field["c1"]  # as a page from before 2026-10-10 would send it
+
+    assert _fields(detect(names, fields=[field]))["Row"]["text"] == "BO"
 
 
 def test_labeling_again_replaces_what_overlaps_and_what_has_the_same_name():

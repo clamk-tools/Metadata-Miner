@@ -99,7 +99,7 @@ test("pasted names are labeled by hand: pick a part, click the name, choose what
   await page.getByRole("button", { name: "Well", exact: true }).click();
   await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s\d+`);
 
-  await page.locator('[data-i="4"]').click(); // the "s" of s1: a click takes the letters and digits around it
+  await page.getByLabel("Pick a part").getByRole("button", { name: "s1" }).click(); // the whole group, from its button
   await expect(page.getByText("Label s1 as")).toBeVisible();
   await page.getByRole("button", { name: "Site", exact: true }).click();
   await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`);
@@ -107,22 +107,37 @@ test("pasted names are labeled by hand: pick a part, click the name, choose what
   await expect(page.getByRole("row", { name: "A01_s1.tif A01 1" })).toBeVisible();
 });
 
-test("a drag across the name selects whole groups, and Escape drops the selection", async ({ page }) => {
+test("a drag across the name selects exactly what it covers, and Escape drops the selection", async ({ page }) => {
   await paste(page, FOUR);
   await expect(matched(page)).toHaveText("Matched 4 of 4 names");
   await page.getByRole("button", { name: "Clear all" }).click();
   await expect(pattern(page)).toHaveText("No pattern yet.");
 
-  const from = await page.locator('[data-i="1"]').boundingBox(); // the "0" of A01
+  const from = await page.locator('[data-i="2"]').boundingBox(); // the "1" of A01
   const to = await page.locator('[data-i="4"]').boundingBox(); // the "s" of s1
   await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2);
   await page.mouse.down();
   await page.mouse.move(to!.x + to!.width / 2, to!.y + to!.height / 2, { steps: 6 });
   await page.mouse.up();
 
-  await expect(page.getByText("Label 01_s as")).toBeVisible();
+  await expect(page.getByText("Label 1_s as")).toBeVisible(); // not the "0" before it, not the "1" after
   await page.keyboard.press("Escape");
   await expect(page.getByText("Select a part of the name to label it")).toBeVisible();
+});
+
+test("a click selects one character, even inside a group, and twice is still one", async ({ page }) => {
+  // the wells are written with the letter O (BO3): the row letter and the O are one group
+  await paste(page, ["plate1_BO3_f01.tif", "plate1_CO4_f02.tif", "plate1_DO5_f01.tif", "plate2_BO3_f02.tif"]);
+  await expect(matched(page)).toBeVisible();
+  await page.getByRole("button", { name: "Clear all" }).click();
+  await expect(pattern(page)).toHaveText("No pattern yet."); // the name takes no press while Python works
+
+  await page.locator('[data-i="7"]').dblclick(); // the B of BO3, pressed twice: still the B alone
+  await expect(page.getByText("Label B as")).toBeVisible();
+  await page.getByRole("button", { name: "Row", exact: true }).click();
+
+  await expect(pattern(page)).toHaveText(String.raw`plate\d+_(?P<Row>[A-Z])O\d+_f\d+`);
+  await expect(page.getByRole("row", { name: "plate1_CO4_f02.tif C" })).toBeVisible();
 });
 
 test("an unmatched name becomes the sample and widens the pattern", async ({ page }) => {
@@ -403,8 +418,9 @@ test("a pattern that would read the sample in the wrong place is tied to the sta
   await paste(page, ["s1_s2_s3.tif", "s3_x2_w2.tif", "x2_s1_w1.tif"]); // the text before the last 3 looks like it
   await expect(matched(page)).toBeVisible();
   await page.getByRole("button", { name: "Clear all" }).click();
+  await expect(pattern(page)).toHaveText("No pattern yet."); // the name takes no press while Python works
 
-  await page.locator('[data-i="7"]').click(); // the 3 of s3
+  await page.getByLabel("Pick a part").getByRole("button", { name: "s3" }).click(); // the whole group, from its button
   await page.getByRole("button", { name: "Site", exact: true }).click();
   await expect(pattern(page)).toHaveText(String.raw`^[a-z]+\d+_[a-z]+\d+_s(?P<Site>\d+)`);
   await expect(page.getByRole("row", { name: "s1_s2_s3.tif 3" })).toBeVisible();

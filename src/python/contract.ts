@@ -11,6 +11,8 @@ export interface DetectField {
   prefix: boolean; // skip the letters before the number ("s" of s2): they are fixed text, not part of the value
   auto: boolean; // the pattern style is picked by the tool; otherwise `mode` is the user's choice
   mode: string;
+  c0: number; // characters of run k0 left out at its start, and of run k1 at its end (B of BO3: c1 = 1)
+  c1: number;
   start: number; // where it sits in the sample (characters)
   end: number;
   text: string;

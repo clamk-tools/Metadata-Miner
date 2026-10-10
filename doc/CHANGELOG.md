@@ -11,6 +11,20 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-10 · You select exactly what you want
+
+- **Seen:** a click on the sample name selects that one character, and a drag exactly the characters it covers;
+  nothing grows on its own any more. So the `B` of `BO3` can be a Row on its own, and `001001` can be split into a
+  Row `001` and a Column `001`. Only the *Or pick a part* buttons select a whole group (a double-click is two
+  clicks on one character). The
+  labels the tool proposes are as before.
+- **Inside:** a field can start or end inside a run (`c0`, `c1` in `engine.py`, `contract.ts`); `add_field` takes
+  the selection as it is, apart from separators at its ends; the unlabeled rest of a run is written into the
+  pattern beside the field. `selection.ts`: `exact` replaces `snap`. Python, unit and end-to-end tests for each; two end-to-end tests now wait for **Clear all**
+  to finish before pressing the name.
+- **Decided:** the user has full control of the selection (`doc/ARCHITECTURE.md` section 11). A field sent
+  without `c0`, `c1` takes whole runs, as before.
+
 ### 2026-10-10 · A step-by-step guide in the README
 
 - **Seen:** nothing changes on the page. The README's *Using it* is now *How to use it*: the steps in short, then

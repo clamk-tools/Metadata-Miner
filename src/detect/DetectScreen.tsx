@@ -13,7 +13,7 @@ import { MatchRows, MatchSummary } from "./Matches";
 import { PatternOptions } from "./PatternOptions";
 import type { Options } from "./PatternOptions";
 import { SampleName } from "./SampleName";
-import { cluster, clusters, snap } from "./selection";
+import { clusters, exact } from "./selection";
 import type { Range } from "./selection";
 
 interface Props {
@@ -49,7 +49,7 @@ export function DetectScreen({ client, starting, onClose }: Props) {
   const [copied, setCopied] = useState<{ pattern: string; ok: boolean } | null>(null);
   const attempt = useRef(0); // bumped by each request: an older answer still in flight is ignored
   const latest = useRef<DetectAnswer | null>(null);
-  const drag = useRef<{ a: number; b: number; moved: boolean } | null>(null);
+  const drag = useRef<{ a: number; b: number } | null>(null);
   const section = useRef<HTMLElement>(null);
   const regex = useRef<HTMLDivElement>(null);
   // The control that sent the request, and where it sits among the screen's controls: every control is disabled while
@@ -138,8 +138,8 @@ export function DetectScreen({ client, starting, onClose }: Props) {
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
     const i = charAt(e.target);
     if (i === null || busy) return;
-    drag.current = { a: i, b: i, moved: false };
-    setPending(snap(tokens, i, i));
+    drag.current = { a: i, b: i };
+    setPending(exact(tokens, i, i));
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -153,14 +153,11 @@ export function DetectScreen({ client, starting, onClose }: Props) {
     const i = charAt(document.elementFromPoint(e.clientX, e.clientY));
     if (i !== null && i !== d.b) {
       d.b = i;
-      d.moved = true;
-      setPending(snap(tokens, d.a, d.b));
+      setPending(exact(tokens, d.a, d.b));
     }
   };
   const onUp = () => {
-    const d = drag.current;
     drag.current = null;
-    if (d && !d.moved) setPending(cluster(tokens, d.a));
   };
   const label = (name: string) => {
     const clean = name.trim().replace(/\s+/g, "_");
@@ -188,8 +185,8 @@ export function DetectScreen({ client, starting, onClose }: Props) {
           <h2 id="dt-title">Detect the pattern</h2>
           {/* The how-to is not on the page: it pops out from the "i" while the pointer or the keyboard focus is on it. */}
           <Info id="dt-help" label="How Detect works">
-            Label the parts of one file name that hold the metadata. Detect has already proposed labels; drag across the name (or click a part) to change
-            them. The pattern and its matches below follow every change.
+            Label the parts of one file name that hold the metadata. Detect has already proposed labels; to change them, click a character of the name or
+            drag across several (the buttons under it take a whole part). The pattern and its matches below follow every change.
           </Info>
         </div>
         <span className="dt-working" role="status">
@@ -333,7 +330,7 @@ export function DetectScreen({ client, starting, onClose }: Props) {
               ))}
               <p className="dt-slot">
                 {fields.length === 0
-                  ? "Nothing is labeled. Drag across a part of the name, or click one, then choose what it is."
+                  ? "Nothing is labeled. Click a character of the name or drag across several, then choose what it is."
                   : "Select a part of the name to add a label"}
               </p>
             </aside>
