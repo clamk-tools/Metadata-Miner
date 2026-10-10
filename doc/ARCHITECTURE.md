@@ -1,8 +1,8 @@
 # Architecture
 
-How ez.Regex (formerly MetadataMiner) is made, for whoever changes it next (a person or an LLM). `README.md` says what the tool does
-for its user. `AGENTS.md` is where to start. `doc/CHANGING.md` says how to make a change. `doc/CHANGELOG.md`
-says what changed and when.
+How ez.Regex (formerly MetadataMiner) is made, for whoever changes it next (a person or an LLM). `README.md` says
+what the tool does for its user. `AGENTS.md` is where to start. `doc/CHANGING.md` says how to make a change.
+`doc/CHANGELOG.md` says what changed and when.
 
 ## 1. In one paragraph
 
@@ -100,7 +100,7 @@ Defined three times, and the three must agree:
 | The answer | the dictionary `detect()` returns, and each entry of its `fields` | `DetectAnswer` and `DetectField` |
 
 A new request key needs all of: a `detect()` argument, a line in `glue.run`, a field in `DetectRequest`. A key
-missing from `glue.run` is dropped without an error.
+missing from `glue.run` would be dropped without an error: `test/pairs.test.ts` fails until the three agree.
 
 Notes on the answer:
 
@@ -282,7 +282,7 @@ holds across them.
   refuses WebAssembly, played by taking `'wasm-unsafe-eval'` out of the policy of the page it is served; and a page
   opened before a release, played by answering 404 for the worker script, then for the page's own script.
 - `PLATE_PATTERN` in `e2e/detect.spec.ts` is the same string as the Python test asserts for the same plate of
-  names. The browser and plain Python are held to one answer.
+  names (`test/pairs.test.ts` checks it). The browser and plain Python are held to one answer.
 - Every end-to-end test fails on an uncaught page error (`pageerror`): the spec files take `test` from
   `e2e/fixtures.ts`, which adds the check. Two exceptions, written in their tests: while the download is cut,
   Pyodide's loader leaves errors of its own; and WebKit reports a missing worker script as a page error (the
@@ -320,7 +320,7 @@ holds across them.
   request added by mistake or by a dependency, not against code written to get round it.
 - Dev server: Vite's default port, 5173. Preview: port 4173, base `/ez.Regex/`.
 - CI (`ci.yml`) on every push to `main` and every pull request: the privacy guard, the Python tests, lint, unit
-  tests, build, end-to-end tests. On `main`, the `dist/` that was tested is then published to GitHub Pages.
+  and pair tests, build, end-to-end tests. On `main`, the `dist/` that was tested is then published to GitHub Pages.
   **A push to `main` is a release.**
 - CI runs the Python tests on the Python version Pyodide ships (3.14 for `pyodide` 314.x).
 

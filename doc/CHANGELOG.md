@@ -1,6 +1,7 @@
 # Change log
 
-What changed in ez.Regex (called MetadataMiner until 2026-10-10), newest first. One entry per change that was published or is ready to be.
+What changed in ez.Regex (called MetadataMiner until 2026-10-10), newest first. One entry per change that was
+published or is ready to be.
 
 The git history is not the record: the published repository may be squashed to a single commit. This file is.
 
@@ -17,9 +18,9 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
   (`STYLES`) is gone: a new style needs no change on the page. `test/pairs.test.ts`, run by `npm test`, fails when
   values written in two files differ: the request keys of `detect()`, `glue.run` and `DetectRequest`; the field
   colours; the 0.4 s delay; the two dark-colour blocks; the background the theme tests expect; the theme key; the
-  pattern both test suites assert; the Python version. `PatternOptions.tsx` and `PythonStatus.tsx` are split out
-  of `DetectScreen.tsx` and `App.tsx`. The checks and the setup are written once (AGENTS, README) instead of three
-  times.
+  pattern both test suites assert; the Python version; the policy word the offline test takes out.
+  `PatternOptions.tsx` and `PythonStatus.tsx` are split out of `DetectScreen.tsx` and `App.tsx`. The checks and
+  the setup are written once (AGENTS, README) instead of three times.
 - **Decided:** `doc/ARCHITECTURE.md` section 10 is in two parts: the pairs a test holds, and those kept by hand.
 
 ### 2026-10-10 · A tool of its own, and a leaner repository

@@ -125,9 +125,9 @@ differences). The Pyodide runtime comes from the `pyodide` npm package and is pu
 | `src/detect/` | The Detect screen and its parts |
 | `src/theme/` | Light or dark: the system setting, the switch, the stored choice |
 | `src/App.tsx` | The page around them: the frame (header, footer), the notices |
-| `test/` | Checks that values written in two files still agree |
 | `src/styles/` | The look: `theme.css` holds the tokens and the controls, `app.css` the page, `detect.css` the Detect screen |
 | `vite.config.ts` | The build: puts the Pyodide runtime in `pyodide/`, writes the page's Content-Security-Policy |
+| `py/tests/`, `src/**/*.test.ts`, `test/`, `e2e/` | The tests: the engine, the page's small parts, the values written in two files, the whole site in three browsers |
 
 The look is the Clamk Tools visual identity: the hub's neutrals and blue accent, Figtree and IBM Plex Mono, flat
 cards with hairlines, the rail at the top. The six colours that tell the labeled fields apart are the identity's
@@ -169,7 +169,8 @@ The repo is public, so `.githooks/check-privacy.sh` keeps a personal email, a pr
 secrets out of every commit (identity, message and content). Turn it on once per clone:
 `git config core.hooksPath .githooks` (it then runs on commit and push). CI runs it before deploying.
 Private terms (an OS user name, a private folder name) go one per line in `~/.git-privacy-terms` or
-`.git/privacy-terms`. A line holding an invented example, such as a made-up path in a test, carries the comment marker `privacy-ok`.
+`.git/privacy-terms`. A line holding an invented example, such as a made-up path in a test, carries the comment
+marker `privacy-ok`.
 
-`.github/workflows/ci.yml` runs all of the above on every push and pull request, and publishes `dist/` to GitHub
-Pages from `main`.
+`.github/workflows/ci.yml` runs the privacy guard and every check of *Developing* on every push and pull request,
+and publishes `dist/` to GitHub Pages from `main`: a push to `main` is a release.
