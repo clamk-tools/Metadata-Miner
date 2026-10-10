@@ -84,7 +84,7 @@ export function SampleName({
     <div
       className={`dt-name${busy ? " busy" : ""}`}
       role="group"
-      aria-label={`Sample file name ${text}: drag to select part of it`}
+      aria-label={`Sample file name ${text}: click a character or drag across several to select them, double-click a group`}
       onPointerDown={onDown}
       onPointerMove={onMove}
       onPointerUp={onUp}
