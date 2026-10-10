@@ -1,5 +1,5 @@
-import type { DetectRequest, FromWorker, MetadataDetect, ToWorker } from "./detect-types";
-import workerUrl from "./detect.worker.ts?worker&url";
+import type { DetectAnswer, DetectRequest, FromWorker, ToWorker } from "./contract";
+import workerUrl from "./worker.ts?worker&url";
 
 // The worker is started from a one-line script in a blob, which imports the real one. A worker made from a blob is
 // held to the page's Content-Security-Policy (vite.config.ts); one made from a file is held only to the headers that
@@ -43,11 +43,11 @@ export class DetectError extends Error {
 }
 
 interface Waiting {
-  resolve: (value: number | MetadataDetect) => void;
+  resolve: (value: number | DetectAnswer) => void;
   reject: (error: DetectError) => void;
 }
 
-// The page's side of the Python worker (detect.worker.ts): hand over the names once, then ask for one step of
+// The page's side of the Python worker (worker.ts): hand over the names once, then ask for one step of
 // Detect at a time. The worker starts loading Python as soon as this is created, so it is usually ready by the time
 // the names are.
 export class DetectClient {
@@ -75,8 +75,8 @@ export class DetectClient {
     return this.send({ id: this.nextId++, type: "setNames", names }) as Promise<number>;
   }
 
-  detect(request: DetectRequest): Promise<MetadataDetect> {
-    return this.send({ id: this.nextId++, type: "detect", request }) as Promise<MetadataDetect>;
+  detect(request: DetectRequest): Promise<DetectAnswer> {
+    return this.send({ id: this.nextId++, type: "detect", request }) as Promise<DetectAnswer>;
   }
 
   /** Starts Python again after a failure, with the names it had. */
@@ -120,7 +120,7 @@ export class DetectClient {
     if (worker === this.worker) this.set({ state: "failed", error, refused, outdated: stale });
   }
 
-  private send(message: ToWorker): Promise<number | MetadataDetect> {
+  private send(message: ToWorker): Promise<number | DetectAnswer> {
     return new Promise((resolve, reject) => {
       if (!this.worker) return reject(new DetectError("Python could not be started", true));
       this.waiting.set(message.id, { resolve, reject });

@@ -1,15 +1,13 @@
-"""Detect: learning a metadata pattern from a labeled sample file name (app/imaging/metadata_detect.py).
+"""The engine (engine.py): learning a metadata pattern from a labeled sample file name, through `detect()`.
 
-The `detect()` tests of HC-Flow's backend/tests/test_metadata_detect.py, unchanged, then (last three sections) the
-tests of what ez.Regex added: values that hold a separator, and two rounds of fixes. HC-Flow's endpoint tests are not here:
-the standalone has no endpoint, and what replaces it (glue.py) is tested in test_glue.py.
+What the page adds around it (glue.py) is tested in test_glue.py.
 """
 import re
 import uuid
 
 import pytest
 
-from app.imaging.metadata_detect import detect
+from engine import detect
 
 
 def _plate_names():
@@ -220,6 +218,17 @@ def test_a_composite_label_gets_a_pattern_that_reads_its_spaces_and_dashes():
     assert channel["values"] == ["Blue - FITC", "Green - dsRed", "Red - Cy5"]
 
 
+def test_when_no_style_fits_enough_names_auto_keeps_the_tightest_of_those_that_fit_the_most():
+    # Sites written s1 or f1: with the "s" left out of the value, half the names have no Site value at all, so every
+    # style fits the same half. The tie goes to the tightest style, not to "any word".
+    names = [f"{r}{c:02d}_{letter}{s}-w{w}.tif" for r in "AB" for c in (1, 2) for letter in "sf" for s in (1, 2) for w in (1, 2, 3)]
+
+    site = _fields(_label(names, 0, ("s1", "Site")))["Site"]
+
+    assert site["fit"] == "shape" and site["pattern"] == r"\d+"
+    assert site["covers"]["shape"] == site["covers"]["word"] == len(names) // 2
+
+
 # ---- moving to another sample ---------------------------------------------------------------------------------
 
 
@@ -356,7 +365,15 @@ def test_detect_reads_only_the_names_so_a_huge_folder_is_fast():
     assert {f["name"] for f in result["fields"]} >= {"Well", "Site"} and result["matched"] == len(names)
 
 
-# ---- values that hold a separator (added in ez.Regex, 2026-10-02) ---------------------------------------------
+def test_a_value_that_holds_a_superscript_digit_is_listed_like_any_other():
+    names = ["x10²_a.tif", "x2²_b.tif", "x2³_c.tif"]  # "²" is a digit to str.isdigit, but not a number to int()
+
+    result = detect(names, add={"name": "Size", "start": 0, "end": 4})
+
+    assert result["matched"] == 2 and _fields(result)["Size"]["values"] == ["x2²", "x10²"]  # 2 before 10
+
+
+# ---- values that hold a separator -----------------------------------------------------------------------------
 
 
 def _dye_names():
@@ -476,18 +493,7 @@ def test_several_words_can_be_chosen_by_hand():
     assert _fields(words)["Channel"]["pattern"] == WORDS and words["matched"] == 24
 
 
-# ---- fixed in ez.Regex (2026-10-02) ---------------------------------------------------------------------------
-
-
-def test_a_value_that_holds_a_superscript_digit_is_listed_like_any_other():
-    names = ["x10²_a.tif", "x2²_b.tif", "x2³_c.tif"]  # "²" is a digit to str.isdigit, but not a number to int()
-
-    result = detect(names, add={"name": "Size", "start": 0, "end": 4})
-
-    assert result["matched"] == 2 and _fields(result)["Size"]["values"] == ["x2²", "x10²"]  # 2 before 10
-
-
-# ---- fixed in ez.Regex (2026-10-09) ---------------------------------------------------------------------------
+# ---- reading the sample where it was labeled ------------------------------------------------------------------
 
 
 def _repeating_names():
@@ -521,17 +527,6 @@ def test_without_anchoring_a_pattern_that_reads_the_sample_elsewhere_says_so():
         "In this name the pattern reads F as 1, not 3: it matches at another place in the name. "
         "Tick “Anchor with the neighbouring part on each side” to keep it in place."
     ]
-
-
-def test_when_no_style_fits_enough_names_auto_keeps_the_tightest_of_those_that_fit_the_most():
-    # Sites written s1 or f1: with the "s" left out of the value, half the names have no Site value at all, so every
-    # style fits the same half. The tie goes to the tightest style, not to "any word".
-    names = [f"{r}{c:02d}_{letter}{s}-w{w}.tif" for r in "AB" for c in (1, 2) for letter in "sf" for s in (1, 2) for w in (1, 2, 3)]
-
-    site = _fields(_label(names, 0, ("s1", "Site")))["Site"]
-
-    assert site["fit"] == "shape" and site["pattern"] == r"\d+"
-    assert site["covers"]["shape"] == site["covers"]["word"] == len(names) // 2
 
 
 def test_an_anchored_pattern_whose_value_would_run_on_is_tied_to_the_end_of_the_name_too():

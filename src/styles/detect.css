@@ -1,4 +1,4 @@
-/* The Detect screen (MetadataDetect.tsx), in the Clamk Tools identity: flat cards on the page, hairlines, groups
+/* The Detect screen (src/detect/), in the Clamk Tools identity: flat cards on the page, hairlines, groups
    introduced by a mono label. Colours are the theme's tokens only. */
 
 /* The colour of a labeled field, in the order the fields are made: the three markers, then amber, violet and grey.
@@ -172,7 +172,7 @@
 }
 
 /* While Python works on an edit every control is disabled, so that two quick edits cannot overwrite each other. Most
-   answers come in a few milliseconds: a disabled control dims only after 400 ms (SLOW_MS in MetadataDetect.tsx), when
+   answers come in a few milliseconds: a disabled control dims only after 400 ms (SLOW_MS in DetectScreen.tsx), when
    "Working…" shows, so a quick edit does not make the screen blink. A delayed switch, not a fade, so it is kept
    under prefers-reduced-motion too (theme.css takes every transition out there). Enabling is immediate. */
 .dt button:disabled,

@@ -8,7 +8,7 @@ import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
 // The Python runtime is served with the page, not from a CDN: the four files loadPyodide fetches, taken from the
-// `pyodide` package and put in pyodide/<version>/ beside assets/. The worker (src/detect.worker.ts) loads them from
+// `pyodide` package and put in pyodide/<version>/ beside assets/. The worker (src/python/worker.ts) loads them from
 // there. The version is in the address so that a browser never pairs a new worker with the runtime files it kept from
 // the release before.
 const PYODIDE_FILES: Record<string, string> = {
@@ -51,7 +51,7 @@ const POLICY = [
   "font-src 'self'",
   "img-src 'self'",
   "connect-src 'self'",
-  // The worker starts from a blob, which is what puts it under this policy (src/detectClient.ts). 'self' is for the
+  // The worker starts from a blob, which is what puts it under this policy (src/python/client.ts). 'self' is for the
   // real worker script, which the blob imports: a browser fetches what a worker imports as a worker script. It also
   // lets a worker start from a file of the site, which would escape the policy: e2e/network.spec.ts fails on one.
   "worker-src 'self' blob:",
@@ -71,8 +71,6 @@ export default defineConfig({
   base: "./", // relative asset paths: the site works under any repository name on GitHub Pages
   appType: "mpa", // one static page, no routes: a path that is not a file is a 404, as on GitHub Pages
   plugins: [react(), pyodideRuntime(), contentSecurityPolicy()],
-  // Its own port, and no silent fallback: 5173 is where HC-Flow's dev server runs on the same machine.
-  server: { port: 5183, strictPort: true },
   worker: { format: "es" },
   optimizeDeps: { exclude: ["pyodide"] },
   test: { include: ["src/**/*.test.ts"] },

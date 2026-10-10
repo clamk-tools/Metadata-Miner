@@ -1,16 +1,16 @@
-"""Detecting a metadata pattern from file names, behind the Load images screen's Detect button.
+"""The engine: writes the metadata pattern for a set of file names from the labels put on one of them.
 
 The user labels parts of one sample file name (Well, Site, Channel ...) and this module writes the regular
 expression: it reads what the other names have in those places, picks the tightest pattern that fits them,
-and keeps enough of the surrounding text for the pattern to match only there. The result is an ordinary
-named-group pattern for `metadata_pattern` (`metadata.py`); nothing here runs during a pipeline.
+and keeps enough of the surrounding text for the pattern to match only there. The result is an ordinary Python
+named-group pattern (CellProfiler's convention), read from each name with `re.search`.
 
 A name is split into **parts** at `_ - . space`, and each part into **runs** (a run is a block of letters, of
 digits, or of anything else: `08(fld` is `08`, `(`, `fld`). A **field** is a stretch of the sample from one run
 to another, so it follows the same place in the other names even when they differ in length (`B03` / `B3`).
 A name with more parts than the sample, because one of its values holds a separator (`Far Red` where the sample
 has `Blue`), is compared too when there is only one way to line it up with the sample (`align`).
-Everything is plain `re`, so what the screen shows is what a run will give.
+Everything is plain `re` and the standard library: the page runs this file as it is, in Pyodide, behind `glue.py`.
 """
 from __future__ import annotations
 
@@ -18,8 +18,6 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from functools import lru_cache
-
-from app.imaging.metadata import compile_pattern, extract_metadata
 
 COVER = 0.95  # a pattern may leave out 5% of the names (the odd ones) and still count as fitting
 # From the tightest pattern to the loosest. "words" = "word", with more words where some names have them (Far Red);
@@ -538,7 +536,7 @@ def _part_at(sample: Parsed, pos: int) -> int:
 
 def misread(pattern: str, items: list[Item], sample: str) -> list[tuple[Item, str | None]]:
     """The fields the pattern does not read where they were labeled in the sample, with what it reads instead. A
-    pattern is looked for anywhere in a name (`extract_metadata`), so loose text around the labels can make it match
+    pattern is looked for anywhere in a name (`re.search`), so loose text around the labels can make it match
     earlier in the name than the labels are (`s1_s2_s3`, labeling the last 3)."""
     match = re.search(pattern, sample) if pattern else None
     wrong = []
@@ -870,8 +868,8 @@ def detect(
 
     groups: list[dict | None] = []
     if pattern:
-        compiled = compile_pattern(pattern)
-        groups = [extract_metadata(compiled, name) for name in names]
+        compiled = re.compile(pattern)
+        groups = [m.groupdict() if (m := compiled.search(name)) else None for name in names]
     matched = [i for i, g in enumerate(groups) if g is not None]
     unmatched = [i for i, g in enumerate(groups) if g is None]
 

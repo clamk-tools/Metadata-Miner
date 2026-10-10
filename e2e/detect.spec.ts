@@ -4,7 +4,7 @@ import { expect, test } from "./fixtures"; // every test fails on an error the p
 
 const FOUR = ["A01_s1.tif", "A02_s1.tif", "B01_s2.tif", "B02_s2.tif"];
 
-// The plate of the Python tests (py/tests/test_metadata_detect.py): 2 plates x 24 wells x 3 sites x 3 channels, plus
+// The plate of the Python tests (py/tests/test_engine.py): 2 plates x 24 wells x 3 sites x 3 channels, plus
 // three names that do not follow the layout. Its pattern is the string those tests assert, so the page (Pyodide) and the
 // Python tests (CPython) are held to one answer.
 const PLATE_PATTERN = String.raw`(?P<Plate>plate\d+)_(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)_w\d+_(?P<Channel>[A-Za-z0-9]+)`;
@@ -169,21 +169,19 @@ test("the sample arrows move through the names and the options change the patter
   await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`);
 });
 
-test("names that are not images are refused, with the reason", async ({ page }) => {
-  await paste(page, ["a_1.nd2", "b_2.nd2"]);
+test("text that holds no file name says so", async ({ page }) => {
+  await paste(page, ["C:\\data\\plate1\\"]); // privacy-ok: invented path
 
-  await expect(page.getByRole("alert")).toContainText("None of the 2 names is an image");
-  await expect(page.getByRole("alert")).toContainText("a_1.nd2, b_2.nd2");
+  await expect(page.getByRole("alert")).toContainText("No file names were found");
 });
 
-test("other files are ignored and counted, and the cross goes back to the names", async ({ page }) => {
-  await paste(page, [...FOUR, "notes.txt", "Thumbs.db", "A01_s1.tif"]);
+test("every name is kept whatever its extension, a repeated one once, and the cross goes back to the names", async ({ page }) => {
+  await paste(page, [...FOUR, "A01_s1.nd2", "A01_s1.tif"]);
 
-  await expect(page.getByText("1 of 4")).toBeVisible(); // the repeated name is kept once
-  await expect(page.getByTestId("ignored")).toContainText("2 other names ignored");
+  await expect(page.getByText("1 of 5")).toBeVisible(); // the repeated name is kept once
 
   await page.getByRole("button", { name: "Close" }).click();
-  await expect(page.getByLabel("Paste the names")).toHaveValue(/notes\.txt/); // what was pasted is still there
+  await expect(page.getByLabel("Paste the names")).toHaveValue(/A01_s1\.nd2/); // what was pasted is still there
 });
 
 test("a single name says why nothing is proposed", async ({ page }) => {

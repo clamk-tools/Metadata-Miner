@@ -1,10 +1,10 @@
-"""glue.py: what the page calls in Pyodide in place of HC-Flow's detect-metadata endpoint."""
+"""glue.py: what the page calls in Pyodide, between the page and the engine."""
 import json
 
 import pytest
 
 import glue
-from app.imaging.metadata_detect import detect
+from engine import detect
 
 NAMES = [f"{row}{col:02d}_s{s}_w{w}.tif" for row in "AB" for col in (1, 2, 3) for s in (1, 2) for w in (1, 2)]
 

@@ -11,8 +11,8 @@ site, the channel. It writes the regular expression that reads those parts from 
 (?P<Plate>plate\d+)_(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)_w\d+_(?P<Channel>[A-Za-z0-9]+)
 ```
 
-That is a Python regular expression with named groups (CellProfiler's convention). It is what
-HC-Flow's *Load images* screen takes as its metadata pattern.
+That is a Python regular expression with named groups (CellProfiler's convention): paste it into CellProfiler's
+*Metadata* module, or anything else that reads Python's `re`.
 
 **Open it:** https://clamk-tools.github.io/ez.Regex/
 
@@ -29,7 +29,7 @@ The page opens on a single step: the names. Then it shows the Detect screen on t
    the sample name, click a part of it, or use the **Or pick a part** buttons, then choose what the part is.
 3. **Check what it reads.** The table shows the values read from the first names. Names the pattern does not match
    are listed: click one to use it as the sample, and the pattern widens to fit it.
-4. **Copy this pattern**, and paste it into HC-Flow.
+4. **Copy this pattern**, and paste it where you need it.
 
 The cross at the top right of the Detect screen goes back to the names, and so does the tool's name in the header.
 
@@ -48,11 +48,8 @@ fixed text.
 
 ### What counts as a name
 
-- Only names ending in `.tif`, `.tiff`, `.png`, `.jpg` or `.jpeg` are used, as in HC-Flow. The page says how many
-  others it ignored.
-- A name found twice is kept once.
-- Two names that differ only by their extension or by case (`a.tif`, `a.png`) give a warning: the pattern is fine,
-  but HC-Flow refuses a folder that holds both.
+Every pasted line is a name, whatever its extension (`.tif`, `.nd2`, `.czi`, ...). A full path is cut down to its
+file name, and a name found twice is kept once.
 
 ### Light or dark
 
@@ -106,57 +103,33 @@ serves (it is the code in this repository, built by its CI).
   enough. When nothing can pin it down (two loose stretches in one part), or *Anchor* is unticked, a note under the
   sample name says what it reads instead.
 - **Characters outside the Basic Multilingual Plane** (an emoji in a file name) shift the selection by one
-  character. Same limit as HC-Flow.
+  character.
 - **Browsers**: tested automatically in Chromium, Firefox and WebKit. Safari itself has not been tried on a Mac or
   an iPhone; WebKit is the stand-in.
 
 ## How it works
 
-The pattern is written by Python, by HC-Flow's two files:
-
-- `py/app/imaging/metadata_detect.py`: the labels, the pattern styles, the proposal.
-- `py/app/imaging/metadata.py`: compiling a pattern and reading a name with it (the two functions Detect uses).
-
-They run in the browser with [Pyodide](https://pyodide.org) (Python compiled to WebAssembly) inside a Web Worker,
-so the page never freezes. Running the real Python matters: the pattern is for Python's `re`, and a JavaScript
+The pattern is written by Python, by one file: `py/engine.py` (the labels, the pattern styles, the proposal), on the
+standard library only. It runs in the browser with [Pyodide](https://pyodide.org) (Python compiled to WebAssembly)
+inside a Web Worker, so the page never freezes. Running the real Python matters: the pattern is for Python's `re`, and a JavaScript
 regular expression is not the same language (`(?P<Name>` against `(?<Name>`, and other differences). The Pyodide
 runtime comes from the `pyodide` npm package and is published with the site, in `pyodide/<version>/`.
 
 | Path | Role |
 |---|---|
+| `py/engine.py` | The engine: writes the pattern |
 | `py/glue.py` | What the page calls: keeps the names, runs one step of Detect, answers in JSON |
-| `src/detect.worker.ts` | Loads Pyodide and the Python files, answers the page's requests in order |
-| `src/detectClient.ts` | The page's side of the worker: starts it, status, `setNames`, `detect`, restart |
-| `vite.config.ts` | The build: puts the Pyodide runtime in `pyodide/`, writes the page's Content-Security-Policy |
-| `src/names.ts` | Names from pasted text; the image filter |
-| `src/MetadataDetect.tsx` | The Detect screen (HC-Flow's dialog, as a page section) |
-| `src/App.tsx`, `src/NamesInput.tsx` | The page around it: the frame (header, footer), the names step and the notices |
-| `src/theme.ts`, `src/ThemeSwitch.tsx` | Light or dark: the system setting, the switch, the stored choice |
+| `src/python/` | The page's side of Python: the worker that runs Pyodide, the client that talks to it, the messages between them |
+| `src/names/` | The names step: the paste box, and names from pasted text |
+| `src/detect/` | The Detect screen and its parts |
+| `src/theme/` | Light or dark: the system setting, the switch, the stored choice |
+| `src/App.tsx` | The page around them: the frame (header, footer), the notices |
 | `src/styles/` | The look: `theme.css` holds the tokens and the controls, `app.css` the page, `detect.css` the Detect screen |
+| `vite.config.ts` | The build: puts the Pyodide runtime in `pyodide/`, writes the page's Content-Security-Policy |
 
 The look is the Clamk Tools visual identity: the hub's neutrals and blue accent, Figtree and IBM Plex Mono, flat
 cards with hairlines, the rail at the top. The six colours that tell the labeled fields apart are the identity's
 blue, green, coral and amber, plus a violet and a grey added here (`theme.css`).
-
-The Python files were copied from HC-Flow at commit `fada151` plus the local changes of 2026-10-02, and keep
-HC-Flow's module path (`app.imaging`). `metadata.py` is cut down to what Detect calls; HC-Flow keeps its full file.
-`metadata_detect.py` has these changes made here (2026-10-02 and 2026-10-09) and **not yet in HC-Flow**:
-
-- values that hold a separator (`align`, `widen`, the `words` style);
-- speed: the parsed names and how the longer ones line up with the sample are cached between requests, and a
-  request counts over the different values a field has rather than over every name. In the browser at 12,000
-  names, a change went from 0.5 to 0.9 s down to about 0.2 s; the answers are the same;
-- a fix: a value with a superscript digit next to its digits (`10²`) made every request fail;
-- a fix: with *Anchor* on, a pattern that would read the sample somewhere else than its labels is tied to the start
-  of the name (`^`), and to its end (`$`) if needed; otherwise a note says what it reads (`misread`, `build_pattern`);
-- a fix: when no style fits 95% of the names, *Auto* keeps the tightest of those that fit the most (it took the
-  loosest on a tie);
-- the two remaining unbounded caches (`_runs`, `_shape`) are bounded like the others.
-
-Their tests are the last three sections of `py/tests/test_metadata_detect.py`. The file is still a drop-in for
-HC-Flow: copying it there also needs, in HC-Flow's `MetadataDetect.tsx`, `["words", "Several words"]` in `STYLES`
-(or the screen fails on a label whose style is `words`) and a line for `^ $` in `GUIDE`. Until then, do not copy
-HC-Flow's file over this one: these changes would be lost.
 
 ## Developing
 
@@ -167,8 +140,8 @@ npm install
 pip install -r requirements-dev.txt
 npx playwright install chromium firefox webkit
 
-npm run dev        # the page, at http://localhost:5183 (not 5173: that is HC-Flow's port)
-npm run test:py    # Python tests: detect() and glue.py
+npm run dev        # the page, at http://localhost:5173
+npm run test:py    # Python tests: the engine and glue.py
 npm test           # TypeScript unit tests
 npm run lint
 npm run build      # type check, then build into dist/

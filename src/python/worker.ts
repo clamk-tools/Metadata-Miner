@@ -1,15 +1,14 @@
-// The Python side of the page: Pyodide in a Web Worker, running HC-Flow's metadata.py and metadata_detect.py as they
-// are (py/app/imaging/), behind py/glue.py. The page talks to it through detectClient.ts.
+// The Python side of the page: Pyodide in a Web Worker, running the engine (py/engine.py) behind py/glue.py. The page
+// talks to it through client.ts.
 import { loadPyodide, version } from "pyodide";
 
-import metadataSource from "../py/app/imaging/metadata.py?raw";
-import detectSource from "../py/app/imaging/metadata_detect.py?raw";
-import glueSource from "../py/glue.py?raw";
-import type { FromWorker, ToWorker } from "./detect-types";
+import engineSource from "../../py/engine.py?raw";
+import glueSource from "../../py/glue.py?raw";
+import type { FromWorker, ToWorker } from "./contract";
 
 // The Python runtime itself is served with the page (vite.config.ts puts the `pyodide` package's files in
 // pyodide/<version>/), beside the folder this script is in: assets/ once built, src/ on the dev server. The script's
-// own address is used, not the worker's: the worker is started from a blob (detectClient.ts).
+// own address is used, not the worker's: the worker is started from a blob (client.ts).
 const INDEX_URL = new URL(/* @vite-ignore */ `../pyodide/${version}/`, import.meta.url).href;
 const ROOT = "/ezregex";
 
@@ -36,9 +35,8 @@ function checkWebAssembly() {
 async function start(): Promise<Glue> {
   checkWebAssembly();
   const pyodide = await loadPyodide({ indexURL: INDEX_URL });
-  pyodide.FS.mkdirTree(`${ROOT}/app/imaging`);
-  pyodide.FS.writeFile(`${ROOT}/app/imaging/metadata.py`, metadataSource);
-  pyodide.FS.writeFile(`${ROOT}/app/imaging/metadata_detect.py`, detectSource);
+  pyodide.FS.mkdirTree(ROOT);
+  pyodide.FS.writeFile(`${ROOT}/engine.py`, engineSource);
   pyodide.FS.writeFile(`${ROOT}/glue.py`, glueSource);
   pyodide.runPython(`import sys\nsys.path.insert(0, "${ROOT}")`);
   return pyodide.pyimport("glue") as unknown as Glue;

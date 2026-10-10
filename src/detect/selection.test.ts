@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { DetectToken } from "./detect-types";
+import type { DetectToken } from "../python/contract";
 import { cluster, clusters, snap } from "./selection";
 
-// The tokens Python gives for a name (metadata_detect.tokens): parts split at _ - . space, each part cut into runs of
+// The tokens Python gives for a name (engine.tokens): parts split at _ - . space, each part cut into runs of
 // letters, of digits, or of anything else.
 function tokenize(name: string): DetectToken[] {
   const out: DetectToken[] = [];

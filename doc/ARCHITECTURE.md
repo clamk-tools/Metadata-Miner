@@ -19,35 +19,36 @@ answer and never builds a pattern itself.
 ```
  page (main thread)                           Web Worker
  ──────────────────                           ──────────────────────────────────────────
- App.tsx                                      detect.worker.ts
-  ├─ NamesInput.tsx ── names.ts                ├─ loads Pyodide from the site (pyodide/)
-  ├─ MetadataDetect.tsx ── selection.ts        ├─ writes the three Python files into Pyodide's file system
-  ├─ ThemeSwitch.tsx ── theme.ts               └─ glue.py ─► metadata_detect.detect() ─► metadata.py
-  └─ DetectClient (detectClient.ts)
+ App.tsx                                      python/worker.ts
+  ├─ names/NamesInput.tsx ── names.ts          ├─ loads Pyodide from the site (pyodide/)
+  ├─ detect/DetectScreen.tsx ── selection.ts   ├─ writes the two Python files into Pyodide's file system
+  ├─ theme/ThemeSwitch.tsx ── theme.ts         └─ glue.py ─► engine.detect()
+  └─ DetectClient (python/client.ts)
         setNames(names)   once per set of names   ──►
         detect(request)   once per edit           ──►   ◄── one JSON answer per request
 ```
 
 | Path | Role |
 |---|---|
-| `py/app/imaging/metadata_detect.py` | The engine: labels, pattern styles, the proposal, the answer. HC-Flow's file plus the changes listed in the README |
-| `py/app/imaging/metadata.py` | `compile_pattern` and `extract_metadata`: the two functions of HC-Flow's file that Detect calls |
+| `py/engine.py` | The engine: labels, pattern styles, the proposal, the answer. Standard library only, nothing about the browser |
 | `py/glue.py` | What the worker calls: `set_names(json)` keeps the names, `run(json)` runs one step and answers in JSON |
-| `src/detect.worker.ts` | Loads Pyodide and the Python files; answers requests one at a time, in order |
-| `src/detectClient.ts` | The page's side of the worker: starts it (from a blob, section 9), engine status, `setNames`, `detect`, `restart` |
-| `src/detect-types.ts` | The contract: the request, the answer, the worker messages |
+| `src/python/worker.ts` | Loads Pyodide and the Python files; answers requests one at a time, in order |
+| `src/python/client.ts` | The page's side of the worker: starts it (from a blob, section 9), engine status, `setNames`, `detect`, `restart` |
+| `src/python/contract.ts` | The contract: the request, the answer, the worker messages |
 | `src/App.tsx` | The frame (rail, header, footer), the names step or the Detect screen, the notices, the guard that ignores a dropped file |
-| `src/NamesInput.tsx` | The names step: the paste box |
-| `src/names.ts` | Names from pasted text; the image filter; the same-stem warning |
-| `src/MetadataDetect.tsx` | The Detect screen and its parts (sample name, label picker, field cards, matches, "i" bubbles) |
-| `src/selection.ts` | A click or a drag on the sample name, turned into the stretch to label |
-| `src/clipboard.ts` | Copy, with a fallback when the browser refuses |
-| `src/theme.ts`, `src/ThemeSwitch.tsx` | Light or dark: system setting, switch, stored choice |
+| `src/names/NamesInput.tsx` | The names step: the paste box |
+| `src/names/names.ts` | Names from pasted text: the file name of each line, sorted, each once |
+| `src/detect/DetectScreen.tsx` | The Detect screen: its state, the requests to Python, the layout |
+| `src/detect/SampleName.tsx`, `LabelPicker.tsx`, `FieldCard.tsx`, `Matches.tsx` | Its parts: the sample name, the label choices, one card per field, what the pattern reads |
+| `src/detect/help.tsx`, `icons.tsx` | The "i" bubbles (the symbol guide, the worked examples); the line icons |
+| `src/detect/selection.ts` | A click or a drag on the sample name, turned into the stretch to label |
+| `src/detect/clipboard.ts` | Copy, with a fallback when the browser refuses |
+| `src/theme/theme.ts`, `src/theme/ThemeSwitch.tsx` | Light or dark: system setting, switch, stored choice |
 | `src/styles/` | `theme.css` tokens and native controls, `app.css` the page, `detect.css` the Detect screen |
 | `index.html` | The page shell; loads `boot.js` ahead of everything else |
 | `public/boot.js` | Before the page's own script: applies the stored theme, and says so when the page's own files are missing (a page opened before a release) |
 | `vite.config.ts` | The build, and two plugins of its own: the Pyodide runtime put in `pyodide/<version>/`, the Content-Security-Policy written into the built page |
-| `py/tests/`, `src/*.test.ts`, `e2e/` | The tests (section 8) |
+| `py/tests/`, `src/**/*.test.ts`, `e2e/` | The tests (section 8) |
 | `.github/workflows/ci.yml`, `.githooks/` | CI and deploy; the privacy guard |
 
 ## 3. Life of a session
@@ -55,20 +56,20 @@ answer and never builds a pattern itself.
 1. **Start.** `App.tsx` creates one `DetectClient` when the module loads. Its worker starts loading Pyodide
    (from `pyodide/<version>/`, on the site itself) at once, so Python is usually ready by the time the names are.
    The engine status is `loading`, `ready` or `failed`, read with `useSyncExternalStore`.
-2. **Names.** The paste box gives raw names. `intake()` keeps the image names (sorted, each once) and counts the
-   rest. `App.load` sends the kept names to the worker (`client.setNames`) in the event handler, so they are there before the first question. It then bumps `run`,
+2. **Names.** `namesFromText()` turns the pasted text into names (each line's file name, sorted, each once).
+   `App.load` sends them to the worker (`client.setNames`) in the event handler, so they are there before the first question. It then bumps `run`,
    the React `key` of the Detect screen: each set of names gets a fresh screen.
-3. **First answer.** `MetadataDetect` mounts and asks `{ suggest: true }`.
+3. **First answer.** `DetectScreen` mounts and asks `{ suggest: true }`.
 4. **An edit.** Every action on the screen calls `call(patch)`, which sends
    `{ sample_index, fields, generalize, anchor, ...patch }`. `fields` are the ones of the last answer, unchanged.
    The patch holds at most one action. The answer replaces the screen's state as a whole.
-5. **Close.** The cross, or the tool's name in the header, sets the names aside (`setResult(null)`) and shows the
+5. **Close.** The cross, or the tool's name in the header, sets the names aside (`setNames(null)`) and shows the
    names step again. The paste box keeps its text.
 
 Things this flow relies on:
 
 - **The worker runs requests in order** (a promise queue), so a request never runs before the names it is about.
-- **A late answer is dropped.** `attempt` in `MetadataDetect` counts requests; an answer that is not the latest
+- **A late answer is dropped.** `attempt` in `DetectScreen` counts requests; an answer that is not the latest
   is ignored, also after the screen is closed.
 - **Two kinds of failure.** Python raises `ValueError` for a problem the user can fix (a bad field name): the
   message is shown as it is. Anything else, a `KeyError` or `TypeError` included, is a bug: `glue.run` marks it
@@ -76,12 +77,12 @@ Things this flow relies on:
 - **Every control waits for the answer.** While a request is in flight the screen's controls are disabled, so two
   quick edits cannot overwrite each other. They are drawn dimmed only after 0.4 s (`detect.css`), with "Working…".
   The keyboard focus goes back to the control that sent the request, or to the one now in its place, or to the
-  screen (`focused` in `MetadataDetect`).
+  screen (`focused` in `DetectScreen`).
 - **Python that does not load.** The worker posts `failed`; the page explains (the connection dropped) and
   offers *Try again*, which is `client.restart()`: a new worker, the names sent again.
 - **A page opened before a release.** A release replaces every file, and the worker script's name changes with its
   content, so a page the browser kept from before asks for files that are gone. When Python does not load,
-  `detectClient.ts` asks the site for the worker script (`HEAD`): a 404 means the page is out of date
+  `client.ts` asks the site for the worker script (`HEAD`): a 404 means the page is out of date
   (`outdated`), and the page offers *Reload the page* instead of *Try again*. When the page's own script or styles
   are missing, the page cannot start at all: `public/boot.js`, which runs first, catches the failed file and shows
   the same offer.
@@ -96,8 +97,8 @@ Defined three times, and the three must agree:
 
 | What | Python | TypeScript |
 |---|---|---|
-| The request | the keyword arguments of `detect()`; `glue.run` reads each key from the JSON | `DetectRequest` in `detect-types.ts` |
-| The answer | the dictionary `detect()` returns, and each entry of its `fields` | `MetadataDetect` and `DetectField` |
+| The request | the keyword arguments of `detect()`; `glue.run` reads each key from the JSON | `DetectRequest` in `contract.ts` |
+| The answer | the dictionary `detect()` returns, and each entry of its `fields` | `DetectAnswer` and `DetectField` |
 
 A new request key needs all of: a `detect()` argument, a line in `glue.run`, a field in `DetectRequest`. A key
 missing from `glue.run` is dropped without an error.
@@ -115,7 +116,7 @@ Notes on the answer:
 - `start` and `end` are Python string positions (code points). JavaScript counts UTF-16 units. They are equal
   except for characters outside the Basic Multilingual Plane, which is the known limit in the README.
 
-## 5. The engine (`metadata_detect.py`)
+## 5. The engine (`engine.py`)
 
 ### 5.1 Vocabulary
 
@@ -159,8 +160,7 @@ A style chosen by hand sets `auto` to false and sticks.
 6. `build_pattern`: the fields as named groups, with the unlabeled text between and around them (5.5). With
    *Anchor* on, tied to the start (`^`) or both ends (`$`) of the name if it would misread the sample.
 7. `misread`: a note for each field the pattern still reads somewhere else in the sample.
-8. Compile the pattern (`metadata.compile_pattern`) and read every name with it (`extract_metadata`, a `search`,
-   not a full match). From that: matched and unmatched names, the preview rows, each field's values, type and hint.
+8. Compile the pattern and read every name with it (`re.search`, not a full match). From that: matched and unmatched names, the preview rows, each field's values, type and hint.
 
 ### 5.4 When the sample changes
 
@@ -209,14 +209,14 @@ loops over every name once per field per style.
 
 | Where | State | Meaning |
 |---|---|---|
-| `App` | `result` | The last intake (`names`, `ignored`, `sameStem`, ...) or null. Detect shows when it has names |
+| `App` | `names` | The names given, or null. Detect shows when there is at least one |
 | `App` | `run` | Key of the Detect screen: bumped for each new set of names and on *Try again* |
 | `App` | `text` | The paste box |
-| `MetadataDetect` | `answer` | The last answer from Python: everything drawn comes from it |
-| `MetadataDetect` | `options` | `generalize` and `anchor`, sent with every request |
-| `MetadataDetect` | `pending` | The selection waiting for a label (`{ start, end }`) |
-| `MetadataDetect` | `busy`, `slow`, `error`, `copied` | A request in flight; over 0.4 s (`SLOW_MS`); a message; the copy state |
-| `MetadataDetect` | `focused` (a ref) | The control that sent the request and its place, to give the focus back |
+| `DetectScreen` | `answer` | The last answer from Python: everything drawn comes from it |
+| `DetectScreen` | `options` | `generalize` and `anchor`, sent with every request |
+| `DetectScreen` | `pending` | The selection waiting for a label (`{ start, end }`) |
+| `DetectScreen` | `busy`, `slow`, `error`, `copied` | A request in flight; over 0.4 s (`SLOW_MS`); a message; the copy state |
+| `DetectScreen` | `focused` (a ref) | The control that sent the request and its place, to give the focus back |
 
 There is no other store, no router and no persistence apart from the theme.
 
@@ -229,17 +229,16 @@ Each character of the sample is a `<span data-i="…">`. A click selects the let
 
 ### 6.3 Names intake (`names.ts`)
 
-Only `.tif`, `.tiff`, `.png`, `.jpg`, `.jpeg` are kept, as HC-Flow's folder listing does. The names are
-pasted, one per line; there is no drop or file picker (removed 2026-10-08, see the change log). `App.tsx` ignores a
-file dropped on the page, so the browser does not open it in place of the tool. Pasted lines may
-be full paths, quoted or not: the file name is kept. Two names with the same stem give a warning
-because HC-Flow refuses that folder.
+The names are pasted, one per line; there is no drop or file picker (removed 2026-10-08, see the change log).
+`App.tsx` ignores a file dropped on the page, so the browser does not open it in place of the tool. Pasted lines may
+be full paths, quoted or not: the file name is kept. Every name is kept, whatever its extension (no filter since
+2026-10-10), sorted, each once.
 
 ### 6.4 Theme
 
 `public/boot.js`, a plain script that `index.html` loads in its `<head>`, puts a stored choice on
 `<html data-theme>` before the first paint. It is a file because the page's policy allows no inline script
-(section 9). `theme.ts` reads it, follows the system setting when there is none, and stores a choice under `clamk-tools:theme` in `localStorage`. The hub and
+(section 9). `theme/theme.ts` reads it, follows the system setting when there is none, and stores a choice under `clamk-tools:theme` in `localStorage`. The hub and
 every Clamk tool share that key and the same origin, so the choice holds across them.
 
 ## 7. Styles
@@ -251,7 +250,7 @@ every Clamk tool share that key and the same origin, so the choice holds across 
   `:root[data-theme="dark"]`. Change both.
 - Colours come from tokens only. No colour literal in `app.css` or `detect.css`.
 - Class prefixes: `dt-` the Detect screen, `in-` the names step, `is-` the matches table and `field-pop` the "i"
-  bubble (names kept from HC-Flow), no prefix for the frame (`frame`, `rail`, `wrap`, `top`, `brand`, `foot`,
+  bubble, no prefix for the frame (`frame`, `rail`, `wrap`, `top`, `brand`, `foot`,
   `notice`, `engine`).
 - A labeled field's colour is `.g0` to `.g5` (`detect.css`): six colours, given in the order of the fields.
 - The rules of the look are in `doc/LLMfeed_VISUAL-IDENTITY.md`, the Clamk Tools brief. It wins over taste.
@@ -262,13 +261,13 @@ every Clamk tool share that key and the same origin, so the choice holds across 
 
 | Layer | Where | Runs with | Covers |
 |---|---|---|---|
-| Engine | `py/tests/test_metadata_detect.py` | `npm run test:py` | `detect()`: proposal, labeling, styles, sample change, options, the answer |
+| Engine | `py/tests/test_engine.py` | `npm run test:py` | `detect()`: proposal, labeling, styles, sample change, options, the answer |
 | Glue | `py/tests/test_glue.py` | `npm run test:py` | `set_names`, `run`, the two kinds of failure |
-| Units | `src/names.test.ts`, `src/selection.test.ts` | `npm test` | Intake rules; click and drag selection |
+| Units | `src/names/names.test.ts`, `src/detect/selection.test.ts` | `npm test` | Names from pasted text; click and drag selection |
 | End to end | `e2e/detect.spec.ts`, `e2e/offline.spec.ts`, `e2e/network.spec.ts` | `npm run e2e` | The built site in Chromium, Firefox and WebKit, with the real Pyodide |
 
-- `test_metadata_detect.py` starts with HC-Flow's tests, unchanged. What this tool adds goes in dated sections at the end
-  of the file.
+- `test_engine.py` is grouped by topic (suggesting, labeling, styles, sample change, options, the answer, values in
+  several words, reading the sample where it was labeled). A new test goes in its topic's section.
 - The end-to-end tests run on **`dist/`** served by `npm run preview` under `/ez.Regex/`. Build first, or
   they test the previous build. Pyodide is in `dist/`, so they need no network.
 - `e2e/network.spec.ts` holds the privacy promise. One test records every request of a session (the worker's
@@ -306,7 +305,7 @@ every Clamk tool share that key and the same origin, so the choice holds across 
   `contentSecurityPolicy` in `vite.config.ts` writes it at build time: everything from the site itself only,
   WebAssembly allowed, no inline script (the theme script is a file for that reason). The dev server runs
   without the policy: hot reload needs an inline script and a WebSocket.
-- **The worker starts from a blob** (`detectClient.ts`): a one-line script that imports the real worker script.
+- **The worker starts from a blob** (`client.ts`): a one-line script that imports the real worker script.
   A worker made from a blob is held to the page's policy; a worker made from a file is held only to the headers
   that file came with, and GitHub Pages sets none. Without the blob, Python could reach any host. Because of it,
   the worker reads its own address from `import.meta.url`, not from `self.location`.
@@ -316,7 +315,7 @@ every Clamk tool share that key and the same origin, so the choice holds across 
   let through and would escape the policy. `e2e/network.spec.ts` is what fails on it.
 - A policy does not stop a navigation (a link, or a script that sends the page elsewhere). It guards against a
   request added by mistake or by a dependency, not against code written to get round it.
-- Dev server: port 5183, strict (5173 is HC-Flow's). Preview: port 4173, base `/ez.Regex/`.
+- Dev server: Vite's default port, 5173. Preview: port 4173, base `/ez.Regex/`.
 - CI (`ci.yml`) on every push to `main` and every pull request: the privacy guard, the Python tests, lint, unit
   tests, build, end-to-end tests. On `main`, the `dist/` that was tested is then published to GitHub Pages.
   **A push to `main` is a release.**
@@ -328,26 +327,25 @@ Nothing checks these pairs. When one side changes, change the other.
 
 | One side | Other side | If they differ |
 |---|---|---|
-| `detect()` arguments | `glue.run`, `DetectRequest` | The new key is ignored, silently |
-| `detect()` answer | `MetadataDetect`, `DetectField` in `detect-types.ts` | TypeScript shows a field that is not there |
-| `MODES`, `MODE_LABEL` (Python) | `STYLES` in `MetadataDetect.tsx` | The field card crashes on a style it does not know |
-| Syntax the engine can write | `GUIDE` in `MetadataDetect.tsx`, the symbol list in the README | The "i" beside *Pattern* is incomplete |
-| The plate pattern in `test_metadata_detect.py` | `PLATE_PATTERN` and `WORDS` in `e2e/detect.spec.ts` | One of the two suites fails |
-| `IMAGE_EXTENSIONS` in `names.ts` | HC-Flow's folder listing; "What counts as a name" in the README | The tool accepts names HC-Flow will not load |
-| Six field colours: `.g0` to `.g5` in `detect.css` | `COLORS` in `MetadataDetect.tsx` | A seventh field has no colour |
-| `SLOW_MS` (400) in `MetadataDetect.tsx` | The 400 ms delay of the dimmed controls in `detect.css`; "0.4 s" in the README | "Working…" and the dimming do not show together |
+| `detect()` arguments | `glue.run`, `DetectRequest` in `contract.ts` | The new key is ignored, silently |
+| `detect()` answer | `DetectAnswer`, `DetectField` in `contract.ts` | TypeScript shows a field that is not there |
+| `MODES`, `MODE_LABEL` in `engine.py` | `STYLES` in `FieldCard.tsx` | The field card crashes on a style it does not know |
+| Syntax the engine can write | `GUIDE` in `help.tsx`, the symbol list in the README | The "i" beside *Pattern* is incomplete |
+| The plate pattern in `test_engine.py` | `PLATE_PATTERN` and `WORDS` in `e2e/detect.spec.ts` | One of the two suites fails |
+| Six field colours: `.g0` to `.g5` in `detect.css` | `COLORS` in `DetectScreen.tsx` | A seventh field has no colour |
+| `SLOW_MS` (400) in `DetectScreen.tsx` | The 400 ms delay of the dimmed controls in `detect.css`; "0.4 s" in the README | "Working…" and the dimming do not show together |
 | Dark tokens under the media query | Dark tokens under `[data-theme="dark"]` | Dark differs between "system" and "chosen" |
 | `--bg` in `theme.css` | `DARK`, `LIGHT` in `e2e/detect.spec.ts` | The theme tests fail |
 | `pyodide` version in `package.json` | `python-version` in `ci.yml`; "Needs … Python" in the README | Tests run on another Python than the one shipped |
 | Tool name `ez.Regex` and its tagline | `index.html` (title, description, noscript), the header and the "newer version" messages in `App.tsx` and `public/boot.js`, `e2e/`, the README | The page, the tests and the docs name different tools |
 | Repository name `ez.Regex` | `preview` script, `playwright.config.ts`, the footer link in `App.tsx`, the README | Preview and tests use a path the site does not have |
-| `clamk-tools:theme` in `theme.ts` | The same key in `public/boot.js`; the hub | The theme flashes, or is not shared |
+| `clamk-tools:theme` in `theme/theme.ts` | The same key in `public/boot.js`; the hub | The theme flashes, or is not shared |
 | Texts and labels on the page | The locators in `e2e/`; the words quoted in the README | Tests fail; the README describes another page |
 | "About 6 MB" and the measured times | `App.tsx` message, README "Known limits" | The page promises what is no longer true |
 | `PYODIDE_FILES` in `vite.config.ts` | The files `loadPyodide` fetches at the pinned `pyodide` version; `pyodide.asm.wasm` in `e2e/network.spec.ts` | Python does not load: every end-to-end test fails |
-| `pyodide/<version>/` in `vite.config.ts` | `../pyodide/${version}/` in `detect.worker.ts`; the routes in `e2e/offline.spec.ts`; the address looked for in `e2e/network.spec.ts` | Python does not load; the offline tests block nothing; the network test does not see Python's requests |
+| `pyodide/<version>/` in `vite.config.ts` | `../pyodide/${version}/` in `python/worker.ts`; the routes in `e2e/offline.spec.ts`; the address looked for in `e2e/network.spec.ts` | Python does not load; the offline tests block nothing; the network test does not see Python's requests |
 | `'wasm-unsafe-eval'` in the policy (`vite.config.ts`) | The text taken out in `e2e/offline.spec.ts`; the browser versions named in `App.tsx` and the README | The refused-browser test fails; the page names the wrong versions |
-| A worker starts from a blob (`detectClient.ts`) | Every other `new Worker` added later | A worker from a file is not held to the policy; `e2e/network.spec.ts` fails if it starts during its session |
+| A worker starts from a blob (`client.ts`) | Every other `new Worker` added later | A worker from a file is not held to the policy; `e2e/network.spec.ts` fails if it starts during its session |
 | The policy in `vite.config.ts` | What the built page loads (scripts, styles, fonts, images, workers) | The browser refuses the new thing, in the build only: the dev server has no policy |
 
 ## 11. Decisions that stand
@@ -356,7 +354,7 @@ Each can be changed, but only on purpose: ask Clem first, then update this list.
 
 - **Python writes the pattern**, in Pyodide, in a Web Worker. No TypeScript port and no backend. The pattern is
   for Python's `re`, and a JavaScript regular expression is a different language (`(?P<Name>` against `(?<Name>`).
-  Running the same code as HC-Flow is what makes the pattern trustworthy there.
+  The names are read with the same `re` the pattern is written for, so what the screen shows is what it gives.
 - **Names only, nothing uploaded.** No file is opened. Every network request goes to the site itself. No CDN,
   no analytics, no other third party: the README's Privacy section depends on it. The page's
   Content-Security-Policy and `e2e/network.spec.ts` hold it in place (section 9); neither is to be loosened to
@@ -370,19 +368,13 @@ Each can be changed, but only on purpose: ask Clem first, then update this list.
 - **Pyodide core only**, exact version pinned, served with the site. No extra Python package (each one is a
   download). Until 2026-10-02 the runtime came from jsDelivr; that was reversed because the CDN's code ran in
   the worker that holds the names, with nothing to check it. The cost is about 13 MB more in each deploy.
-- **`metadata_detect.py` stays a drop-in for HC-Flow**: standard library only, module path `app.imaging`, nothing
-  about the browser in it. What belongs to the page goes in `glue.py`.
+- **The engine stands alone**: `engine.py` uses the standard library only (each package would be a download on a
+  first visit) and holds nothing about the browser, so its tests run in plain Python in under a second. What belongs
+  to the page goes in `glue.py`. Until 2026-10-10 it was kept a drop-in copy for HC-Flow, the tool Detect was first
+  built in; ez.Regex is now on its own.
 - **`base: "./"`** in Vite, so the site does not depend on the repository name.
 - **The tool and the repository are ez.Regex** (2026-10-10, formerly MetadataMiner and `Metadata-Miner`). GitHub
   forwards the old repository address, not the old site address: `…/Metadata-Miner/` no longer works. Renaming
   again breaks the shared links once more; do it on purpose, with section 10's row about the repository name.
 - **The look follows the Clamk Tools brief** (`doc/LLMfeed_VISUAL-IDENTITY.md`): tokens, flat hairlines, the rail,
   the header with the name, a quiet "← All tools" link to the hub and the theme switch.
-
-## 12. HC-Flow
-
-Detect was built in HC-Flow, as a dialog of its *Load images* screen backed by an HTTP endpoint. ez.Regex is
-that dialog as a page: `glue.py` replaces the endpoint, the folder scan is replaced by the names step, and *Use
-this pattern* became *Copy this pattern*. The engine has moved ahead of HC-Flow's copy; the README lists the
-differences and what porting them back needs. Until that is done, do not replace `metadata_detect.py` with
-HC-Flow's file.

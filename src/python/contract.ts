@@ -1,4 +1,4 @@
-// What Detect (py/app/imaging/metadata_detect.py) takes and answers. A field is a labeled stretch of the sample file
+// What the engine (py/engine.py, through py/glue.py) takes and answers. A field is a labeled stretch of the sample file
 // name; the screen sends the fields back exactly as the last answer returned them, with at most one edit.
 export interface DetectField {
   name: string;
@@ -37,7 +37,7 @@ export interface DetectToken {
   k: number | null;
 }
 
-export interface MetadataDetect {
+export interface DetectAnswer {
   sample: string;
   sample_index: number;
   total: number;
@@ -66,7 +66,7 @@ export interface DetectRequest {
   anchor?: boolean;
 }
 
-// The messages between the page (detectClient.ts) and the Python worker (detect.worker.ts).
+// The messages between the page (client.ts) and the Python worker (worker.ts).
 export type ToWorker = { id: number; type: "setNames"; names: string[] } | { id: number; type: "detect"; request: DetectRequest };
 
 export type FromWorker =
@@ -74,5 +74,5 @@ export type FromWorker =
   // Python could not be started: every request will fail. `refused`: the browser will not run it, so trying again
   // cannot help; otherwise it did not arrive (the connection dropped).
   | { type: "failed"; error: string; refused: boolean }
-  | { type: "reply"; id: number; ok: true; result: number | MetadataDetect }
+  | { type: "reply"; id: number; ok: true; result: number | DetectAnswer }
   | { type: "reply"; id: number; ok: false; error: string; unexpected: boolean };
