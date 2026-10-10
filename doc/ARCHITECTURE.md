@@ -107,7 +107,7 @@ Notes on the answer:
 - `fields[*]` holds two things: what the screen sends back (`name`, `s_seg`, `k0`, `e_seg`, `k1`, `c0`, `c1`,
   `s0`, `e1`, `prefix`, `auto`, `mode`; see `Field.to_wire`) and what Python worked out for display (`start`, `end`, `text`,
   `pattern`, `covers`, `fit`, ...). Python ignores the second group when the fields come back.
-- `tokens` is the sample name cut into runs and separators. A double-click and the *Or pick a part* buttons use it.
+- `tokens` is the sample name cut into runs and separators. The *Or pick a part* buttons are made from it.
 - `styles` is every pattern style, tightest first, with its name: the field card's choices come from it.
 - `pieces` is the pattern in order, each piece tagged with its field, so the screen can colour the groups.
   `pattern` is the same pieces joined.
@@ -229,9 +229,8 @@ There is no other store, no router and no persistence apart from the theme.
 
 Each character of the sample is a `<span data-i="…">`. The user has full control of what is selected: a click
 selects that one character, a drag exactly the characters it covers (`exact`); only separators at the ends are
-left out. A second press on the same character within 400 ms (`DOUBLE_MS`) selects the letters and digits around
-it (`cluster`); the *Or pick a part* buttons list the same groups (`clusters`) for keyboard and touch. The double-click
-is told by the page itself: the press handler cancels the browser's own, which would select the text. Choosing a
+left out, and pressing twice is still one character. Only the *Or pick a part* buttons take a whole group: the
+letters and digits around a character (`clusters`, from `cluster`), for the mouse, the keyboard and touch. Choosing a
 label sends `add: { name, start, end }`. Python takes the same stretch (`add_field`): a field may start or end
 inside a run, and the unlabeled rest of that run is written into the pattern beside it (`_token_pattern` with `lo`,
 `hi`).
@@ -393,8 +392,8 @@ Each can be changed, but only on purpose: ask Clem first, then update this list.
 - **The page is two views in the family's frame**: the names step and the Detect screen. No example names, no
   routes, no stored state apart from the theme.
 - **The user selects exactly** (2026-10-10): a click is one character, a drag exactly what it covers. Nothing
-  grows a selection on its own; a whole group is a double-click or a button away. The proposal still labels whole
-  runs.
+  grows a selection on its own, not even a double-click; a whole group is a button away (*Or pick a part*). The
+  proposal still labels whole runs.
 - **The pattern is copied, not loaded.** It is always written from labels; an existing pattern cannot be edited.
 - **Pyodide core only**, exact version pinned, served with the site. No extra Python package (each one is a
   download). Until 2026-10-02 the runtime came from jsDelivr; that was reversed because the CDN's code ran in

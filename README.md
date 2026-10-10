@@ -61,8 +61,7 @@ parts that change between names, and named them (Plate, Well, Site, Channel...).
 - **A part has no label**: select it in the sample name. You decide exactly what is selected:
   - **click** a character to select that one character (the `B` alone in `BO3`);
   - **drag** across characters to select exactly those (the first three digits of `001001`);
-  - **double-click** a character, or use the buttons under **Or pick a part**, to select a whole group at once
-    (`BO3`).
+  - use the buttons under **Or pick a part** to select a whole group at once (`BO3`).
 
   Then choose what it is: one of the buttons (Plate, Well, Row, Column, Site, Field, Channel, Filter, Laser, Time,
   Date, Z), or type your own name in **Other name** and press **Add**. Press **Escape** to drop a selection.

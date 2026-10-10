@@ -1,7 +1,7 @@
 import type { DetectToken } from "../python/contract";
 
 // Turning a click or a drag on the sample name into the stretch to label. A click or a drag is taken exactly, to the
-// character; a double-click or a "pick a part" button takes a whole group. The tokens are the name cut into groups
+// character; only a "pick a part" button takes a whole group. The tokens are the name cut into groups
 // of letters, groups of digits, other characters and separators, as Python answered them.
 
 export interface Range {
@@ -21,8 +21,7 @@ export function exact(tokens: DetectToken[], a: number, b: number): Range | null
   return { start: Math.max(lo, touched[0].start), end: Math.min(hi, touched[touched.length - 1].end) };
 }
 
-/** What a double-click on character i selects: the letters and digits around it up to a bracket or separator (B03,
- * s2, FITC). */
+/** The letters and digits around character i, up to a bracket or separator (B03, s2, FITC): one "pick a part" button. */
 export function cluster(tokens: DetectToken[], i: number): Range | null {
   const at = tokens.findIndex((t) => !t.sep && t.start <= i && i < t.end);
   if (at < 0) return null;

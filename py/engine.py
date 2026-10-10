@@ -162,7 +162,7 @@ def align(name: str, sample_name: str, fixed: tuple[str | None, ...], shapes: tu
 
 
 def tokens(parsed: Parsed) -> list[dict]:
-    """The sample cut into runs and the separators between them: what a double-click selects on the screen."""
+    """The sample cut into runs and the separators between them: what the "pick a part" buttons are made of."""
     out: list[dict] = []
     at = 0
     for index, part in enumerate(parsed.parts):

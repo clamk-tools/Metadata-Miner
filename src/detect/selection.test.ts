@@ -59,7 +59,7 @@ describe("exact", () => {
 });
 
 describe("cluster", () => {
-  it("selects the letters and digits around a double-click", () => {
+  it("takes the letters and digits around a character", () => {
     const tokens = tokenize(PLATE);
 
     expect(text(PLATE, cluster(tokens, PLATE.indexOf("03")))).toBe("B03");
