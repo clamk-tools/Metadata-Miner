@@ -1,5 +1,7 @@
 # ez.Regex
 
+<img width="789" height="397" alt="image" src="https://github.com/user-attachments/assets/a3145424-9b91-4ff8-883e-17e3d50b84d9" />
+
 **File name in, regex out.**
 
 Write the metadata pattern for your microscopy image file names by labeling one of them.
