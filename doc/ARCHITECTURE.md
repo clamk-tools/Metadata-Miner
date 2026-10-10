@@ -49,6 +49,7 @@ answer and never builds a pattern itself.
 | `vite.config.ts` | The build, and two plugins of its own: the Pyodide runtime put in `pyodide/<version>/`, the Content-Security-Policy written into the built page |
 | `py/tests/`, `src/**/*.test.ts`, `test/`, `e2e/` | The tests (section 8) |
 | `.github/workflows/ci.yml`, `.githooks/` | CI and deploy; the privacy guard |
+| `.github/dependabot.yml`, `requirements-dev.txt` | Weekly update proposals; the Python test tools, at exact versions |
 
 ## 3. Life of a session
 
@@ -329,9 +330,15 @@ holds across them.
   request added by mistake or by a dependency, not against code written to get round it.
 - Dev server: Vite's default port, 5173. Preview: port 4173, base `/ez.Regex/`.
 - CI (`ci.yml`) on every push to `main` and every pull request: the privacy guard, the Python tests, lint, unit
-  and pair tests, build, end-to-end tests. On `main`, the `dist/` that was tested is then published to GitHub Pages.
+  and pair tests, build (job `test`), then the end-to-end tests of that same `dist/`, one job per browser running
+  side by side (job `e2e`; the downloaded browsers are kept between runs). On `main`, the `dist/` that was tested
+  is then published to GitHub Pages, once every job has passed.
   **A push to `main` is a release.**
 - CI runs the Python tests on the Python version Pyodide ships (3.14 for `pyodide` 314.x).
+- What CI runs is fixed: each action to one commit (its version in a comment), the Python test tools to exact
+  versions in `requirements-dev.txt`, the npm packages by `package-lock.json`. A moved tag or a new release cannot
+  change the published site unseen. Dependabot (`.github/dependabot.yml`) proposes updates weekly, a release only
+  once it is a week old; a new Pyodide major (a new Python) is left out, it follows `doc/CHANGING.md` recipe 6.7.
 
 ## 10. Kept in step
 

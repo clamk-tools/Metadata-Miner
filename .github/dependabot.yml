@@ -1,0 +1,39 @@
+# Dependabot opens a pull request when a dependency has a new version, so that a fix (a security fix above all) does
+# not wait for someone to look. CI tests each pull request like any other; nothing is merged on its own.
+# `cooldown`: a release is proposed only once it is a week old, time for a bad release to be found and pulled.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      # The small updates together, in one pull request a week; a major version comes on its own.
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # A new Pyodide major is a new Python (314 = Python 3.14): it follows recipe 6.7 of doc/CHANGING.md, by hand.
+      - dependency-name: pyodide
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      python-test-tools:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns: ["*"]
