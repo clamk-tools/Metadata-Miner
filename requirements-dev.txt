@@ -1,1 +1,7 @@
-pytest
+# What `npm run test:py` needs, at exact versions: CI installs these in the job that builds the published site, so a
+# new release cannot change it unseen. Dependabot proposes the updates (.github/dependabot.yml).
+pytest==9.1.1
+iniconfig==2.3.1
+packaging==26.3
+pluggy==1.6.0
+pygments==2.21.0

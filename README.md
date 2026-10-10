@@ -126,6 +126,8 @@ Most of the time the tool's choices are right. If not:
   | Seen values | only the values found in your names: `B03` or `B04` or `C10` |
 
   Each choice shows how many of your names it reads (`432/432`).
+  *Seen values* writes the values themselves into the pattern, and the card says so: check them before you
+  share the pattern (see *Privacy*).
 - **Keeping the letter out of a value.** For a part like `s2`, the card has **Value only, skip “s”**: ticked,
   Site reads `2`; unticked, it reads `s2`.
 - **The two boxes under the pattern** (each has an **i** with an example):
@@ -163,6 +165,10 @@ browser, and it is the same one on the hub and on every Clamk tool.
 
 Only file names are read. No file is opened, and nothing is uploaded: the names stay in the page. A pasted full
 path is cut down to its file name.
+
+The pattern is yours to copy. With the *Seen values* choice it lists values taken from your names (sample or
+patient codes, say): they go wherever the pattern goes. The other choices write the shape of a value (`[A-Z]\d{2}`),
+not the value; text that is the same in every name, around your labels, is written as it is with all of them.
 
 Every network request goes to the site itself: the page, its fonts and the Python runtime (see below) are all
 served from it. No CDN, no analytics, no other third party. Two things hold that in place:
@@ -276,4 +282,6 @@ Private terms (an OS user name, a private folder name) go one per line in `~/.gi
 marker `privacy-ok`.
 
 `.github/workflows/ci.yml` runs the privacy guard and every check of *Developing* on every push and pull request,
-and publishes `dist/` to GitHub Pages from `main`: a push to `main` is a release.
+and publishes `dist/` to GitHub Pages from `main`: a push to `main` is a release. Its actions and the Python test
+tools are fixed to exact versions; `.github/dependabot.yml` has Dependabot propose the updates each week, as pull
+requests that CI tests like any other.

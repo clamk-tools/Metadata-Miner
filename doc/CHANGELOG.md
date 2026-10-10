@@ -11,6 +11,18 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-10 · Fixes from the security and privacy audit
+
+- **Seen:** when a label's style is *Seen values*, its card says that the pattern now holds the values of your
+  names, to check before sharing it. The README's Privacy section says the same.
+- **Inside:** CI's actions are fixed to exact commits and the Python test tools to exact versions
+  (`requirements-dev.txt`), so a moved tag or a bad new release cannot change the published site unseen.
+  `.github/dependabot.yml` has Dependabot propose updates weekly (a release only once it is a week old). An
+  end-to-end test checks the *Seen values* warning.
+- **Decided:** a new Pyodide major is left out of Dependabot: it is a new Python, done by hand (recipe 6.7). The
+  Python test tools are pinned without hashes, which would break the install on Windows (it needs one more
+  package there).
+
 ### 2026-10-10 · The answer's keys are checked, and one rule is written once
 
 - **Seen:** nothing changes on the page.

@@ -171,6 +171,9 @@ in the README.
   goes to the site itself; the page's policy refuses the rest and `e2e/network.spec.ts` fails on it.
 - A Python package cannot be added lightly: Pyodide would download it on every first visit. The engine uses the
   standard library only.
+- A new action in `ci.yml` is fixed to a full commit, its version in a comment
+  (`uses: owner/action@<40 characters> # v1.2.3`), and a new Python test tool to an exact version (`==`) in
+  `requirements-dev.txt`, with the packages it brings. Dependabot then keeps them current.
 
 ### 6.10 Something new the page loads
 

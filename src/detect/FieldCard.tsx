@@ -86,6 +86,8 @@ export function FieldCard({
           </span>
         )}
         {field.hint && <span className="dt-warn">{field.hint}</span>}
+        {/* "seen values" writes the names' own values into the pattern: they leave with it when it is copied */}
+        {field.mode_used === "list" && <span className="dt-warn">this style writes the values of your names into the pattern: check them before you share it</span>}
       </div>
     </div>
   );

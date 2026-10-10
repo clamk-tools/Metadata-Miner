@@ -150,7 +150,7 @@ test("an unmatched name becomes the sample and widens the pattern", async ({ pag
   await expect(page.getByText(String.raw`Well now reads [A-Z]\d+, which fits B3 and A01.`)).toBeVisible();
 });
 
-test("a field can be renamed and its style changed, and a bad name is refused with Python's message", async ({ page }) => {
+test("a field can be renamed and its style changed (seen values warns), and a bad name is refused with Python's message", async ({ page }) => {
   await paste(page, FOUR);
   await expect(pattern(page)).toHaveText(String.raw`(?P<Well>[A-Z]\d{2})_s(?P<Site>\d+)`);
 
@@ -160,6 +160,15 @@ test("a field can be renamed and its style changed, and a bad name is refused wi
 
   await page.getByLabel("Pattern style of Position").selectOption("flex");
   await expect(pattern(page)).toHaveText(String.raw`(?P<Position>[A-Z]+\d+)_s(?P<Site>\d+)`);
+
+  // "Seen values" writes the names' own values into the pattern: the card says so, and only for that style.
+  const leaves = page.getByText("this style writes the values of your names into the pattern");
+  await expect(leaves).toHaveCount(0);
+  await page.getByLabel("Pattern style of Position").selectOption("list");
+  await expect(pattern(page)).toHaveText(String.raw`(?P<Position>(?:A01|A02|B01|B02))_s(?P<Site>\d+)`);
+  await expect(leaves).toBeVisible();
+  await page.getByLabel("Pattern style of Position").selectOption("flex");
+  await expect(leaves).toHaveCount(0);
 
   await page.getByLabel("Name of the field labeled A01").fill("9lives");
   await page.getByLabel("Name of the field labeled A01").press("Enter");
