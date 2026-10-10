@@ -60,7 +60,8 @@ async function paste(page: Page, names: string[]) {
 }
 
 test("the page opens on the names step, with nothing else to get through", async ({ page }) => {
-  await expect(page.getByRole("heading", { name: "MetadataMiner" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ez.Regex" })).toBeVisible();
+  await expect(page.getByText("File name in, regex out")).toBeVisible();
   await expect(page.getByLabel("Paste the names, one per line")).toBeVisible();
   await expect(page.getByRole("button", { name: "Choose files…" })).toHaveCount(0); // pasting is the only way in
   await expect(page.getByRole("button", { name: "Use these names" })).toBeDisabled(); // until some names are pasted
@@ -239,7 +240,7 @@ test("the name in the header goes back to the names", async ({ page }) => {
   await paste(page, FOUR);
   await expect(page.getByRole("heading", { name: "Detect the pattern" })).toBeVisible();
 
-  await page.getByRole("link", { name: "MetadataMiner" }).click();
+  await page.getByRole("link", { name: "ez.Regex" }).click();
   await expect(page.getByLabel("Paste the names")).toHaveValue(/A01_s1\.tif/);
 });
 

@@ -1,4 +1,6 @@
-# MetadataMiner
+# ez.Regex
+
+**File name in, regex out.**
 
 Write the metadata pattern for your microscopy image file names by labeling one of them.
 
@@ -14,7 +16,8 @@ HC-Flow's *Load images* screen takes as its metadata pattern.
 
 **Open it:** https://clamk-tools.github.io/Metadata-Miner/
 
-The tool is one of the [Clamk Tools](https://clamk-tools.github.io/). It runs entirely in the browser.
+The tool is one of the [Clamk Tools](https://clamk-tools.github.io/). It runs entirely in the browser. It was called
+MetadataMiner until 2026-10-10; the repository and the web address keep that old name.
 
 ## Using it
 

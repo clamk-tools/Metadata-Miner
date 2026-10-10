@@ -1,6 +1,6 @@
 # Architecture
 
-How MetadataMiner is made, for whoever changes it next (a person or an LLM). `README.md` says what the tool does
+How ez.Regex (formerly MetadataMiner) is made, for whoever changes it next (a person or an LLM). `README.md` says what the tool does
 for its user. `AGENTS.md` is where to start. `doc/CHANGING.md` says how to make a change. `doc/CHANGELOG.md`
 says what changed and when.
 
@@ -267,8 +267,8 @@ every Clamk tool share that key and the same origin, so the choice holds across 
 | Units | `src/names.test.ts`, `src/selection.test.ts` | `npm test` | Intake rules; click and drag selection |
 | End to end | `e2e/detect.spec.ts`, `e2e/offline.spec.ts`, `e2e/network.spec.ts` | `npm run e2e` | The built site in Chromium, Firefox and WebKit, with the real Pyodide |
 
-- `test_metadata_detect.py` starts with HC-Flow's tests, unchanged. What MetadataMiner adds goes in dated
-  sections at the end of the file.
+- `test_metadata_detect.py` starts with HC-Flow's tests, unchanged. What this tool adds goes in dated sections at the end
+  of the file (the older ones say "MetadataMiner", its old name).
 - The end-to-end tests run on **`dist/`** served by `npm run preview` under `/Metadata-Miner/`. Build first, or
   they test the previous build. Pyodide is in `dist/`, so they need no network.
 - `e2e/network.spec.ts` holds the privacy promise. One test records every request of a session (the worker's
@@ -339,6 +339,7 @@ Nothing checks these pairs. When one side changes, change the other.
 | Dark tokens under the media query | Dark tokens under `[data-theme="dark"]` | Dark differs between "system" and "chosen" |
 | `--bg` in `theme.css` | `DARK`, `LIGHT` in `e2e/detect.spec.ts` | The theme tests fail |
 | `pyodide` version in `package.json` | `python-version` in `ci.yml`; "Needs … Python" in the README | Tests run on another Python than the one shipped |
+| Tool name `ez.Regex` and its tagline | `index.html` (title, description, noscript), the header and the "newer version" messages in `App.tsx` and `public/boot.js`, `e2e/`, the README | The page, the tests and the docs name different tools |
 | Repository name `Metadata-Miner` | `preview` script, `playwright.config.ts`, the footer link in `App.tsx`, the README | Preview and tests use a path the site does not have |
 | `clamk-tools:theme` in `theme.ts` | The same key in `public/boot.js`; the hub | The theme flashes, or is not shared |
 | Texts and labels on the page | The locators in `e2e/`; the words quoted in the README | Tests fail; the README describes another page |
@@ -372,12 +373,15 @@ Each can be changed, but only on purpose: ask Clem first, then update this list.
 - **`metadata_detect.py` stays a drop-in for HC-Flow**: standard library only, module path `app.imaging`, nothing
   about the browser in it. What belongs to the page goes in `glue.py`.
 - **`base: "./"`** in Vite, so the site does not depend on the repository name.
+- **The tool is ez.Regex, the repository stays `Metadata-Miner`** (2026-10-10). Renaming the repository changes the
+  web address and breaks links already shared; it is a GitHub setting, to be done on purpose with section 10's
+  row about the repository name.
 - **The look follows the Clamk Tools brief** (`doc/LLMfeed_VISUAL-IDENTITY.md`): tokens, flat hairlines, the rail,
   the header with the name, a quiet "← All tools" link to the hub and the theme switch.
 
 ## 12. HC-Flow
 
-Detect was built in HC-Flow, as a dialog of its *Load images* screen backed by an HTTP endpoint. MetadataMiner is
+Detect was built in HC-Flow, as a dialog of its *Load images* screen backed by an HTTP endpoint. ez.Regex is
 that dialog as a page: `glue.py` replaces the endpoint, the folder scan is replaced by the names step, and *Use
 this pattern* became *Copy this pattern*. The engine has moved ahead of HC-Flow's copy; the README lists the
 differences and what porting them back needs. Until that is done, do not replace `metadata_detect.py` with

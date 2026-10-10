@@ -1,6 +1,6 @@
 # Change log
 
-What changed in MetadataMiner, newest first. One entry per change that was published or is ready to be.
+What changed in ez.Regex (called MetadataMiner until 2026-10-10), newest first. One entry per change that was published or is ready to be.
 
 The git history is not the record: the published repository may be squashed to a single commit. This file is.
 
@@ -9,6 +9,16 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 (year-month-day) and a few words. Work that is not yet on `main` goes under **Unreleased**.
 
 ## Unreleased
+
+### 2026-10-10 · The tool is now ez.Regex
+
+- **Seen:** the header reads **ez.Regex**, with the tagline "File name in, regex out" beside it (under it on a
+  narrow screen). The browser tab, the page description and the "newer version" messages use the new name.
+- **Inside:** `App.tsx` (header), `app.css` (`.brand-line`, `.tagline`), `index.html`, `public/boot.js`, the
+  end-to-end tests, the README and the docs. Older change log entries and the Python test headings keep the old
+  name: they are history.
+- **Decided:** the repository, the web address (`…/Metadata-Miner/`), the package name and Python's working folder
+  in the worker keep the old name. Renaming the repository breaks shared links; the others are never seen.
 
 ### 2026-10-09 · A page opened before a release says so
 
