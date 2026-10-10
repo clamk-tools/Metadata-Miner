@@ -715,6 +715,15 @@ def suggest_fields(ctx: Context) -> list[Field]:
     return [cand[4] for cand in accepted]
 
 
+def _tightest(item: Item, modes: tuple[str, ...], at_least: str, values: tuple[str, ...], otherwise: str) -> str:
+    """The first of `modes` (tightest first), no tighter than `at_least`, whose pattern for `item` reads every one
+    of `values`; `otherwise` when none does. What a field is widened to when it must fit two names (`remap`, `widen`)."""
+    for mode in modes:
+        if _RANK[mode] >= _RANK[at_least] and all(re.fullmatch(item.patterns[mode], v) for v in values):
+            return mode
+    return otherwise
+
+
 def remap(old: Context, new: Context, fields: list[Field]) -> tuple[list[Field], list[str]]:
     """Carries `fields` from one sample to another. Fields that have no such run in the new name are dropped.
     A pattern that would no longer fit the new name, or the one the field was made on, is widened to the
@@ -735,12 +744,7 @@ def remap(old: Context, new: Context, fields: list[Field]) -> tuple[list[Field],
             if earlier.pattern != item.pattern:  # it still fits both, but is now read from this name's shape
                 notes.append(f"{item.field.name} now reads {item.pattern}, which fits {item.text} and {earlier.text}.")
             continue
-        pick = "word"
-        for mode in AUTO_ORDER:
-            pattern = item.patterns[mode]
-            if _RANK[mode] >= _RANK[earlier.mode] and re.fullmatch(pattern, item.core) and re.fullmatch(pattern, earlier.core):
-                pick = mode
-                break
+        pick = _tightest(item, AUTO_ORDER, earlier.mode, (item.core, earlier.core), "word")
         item.field.auto, item.field.mode = False, pick
         notes.append(f"Widened {item.field.name} to “{MODE_LABEL[pick]}” so it fits both {earlier.text} and {item.text}.")
     return kept, notes
@@ -768,12 +772,7 @@ def widen(ctx: Context, index: int, fields: list[Field]) -> tuple[list[Field], l
             value = other.group(2) if other and other.group(1) == item.prefix_lit else None
         if value is None or re.fullmatch(item.pattern, value):
             continue
-        pick = "list"
-        for mode in AUTO_ORDER + ("words",):
-            pattern = item.patterns[mode]
-            if _RANK[mode] >= _RANK[item.mode] and re.fullmatch(pattern, value) and re.fullmatch(pattern, item.core):
-                pick = mode
-                break
+        pick = _tightest(item, AUTO_ORDER + ("words",), item.mode, (value, item.core), "list")
         item.field.auto, item.field.mode = False, pick
         notes.append(f"Widened {item.field.name} to “{MODE_LABEL[pick]}” so it fits both {item.text} and {value}.")
     return fields, notes
