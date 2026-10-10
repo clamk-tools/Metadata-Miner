@@ -97,10 +97,12 @@ Defined three times, and the three must agree:
 | What | Python | TypeScript |
 |---|---|---|
 | The request | the keyword arguments of `detect()`; `glue.run` reads each key from the JSON | `DetectRequest` in `contract.ts` |
-| The answer | the dictionary `detect()` returns, and each entry of its `fields` | `DetectAnswer` and `DetectField` |
+| The answer | the dictionary `detect()` returns, and each entry of its `fields` and `tokens` | `DetectAnswer`, `DetectField` and `DetectToken` |
 
 A new request key needs all of: a `detect()` argument, a line in `glue.run`, a field in `DetectRequest`. A key
 missing from `glue.run` would be dropped without an error: `test/pairs.test.ts` fails until the three agree.
+A key added to the answer, or renamed, on one side only would show on the page as an empty value:
+`test_the_answer_has_the_keys_contract_ts_gives_it` (`test_glue.py`) fails until both sides have the same keys.
 
 Notes on the answer:
 
@@ -271,7 +273,7 @@ holds across them.
 | Layer | Where | Runs with | Covers |
 |---|---|---|---|
 | Engine | `py/tests/test_engine.py` | `npm run test:py` | `detect()`: proposal, labeling, styles, sample change, options, the answer |
-| Glue | `py/tests/test_glue.py` | `npm run test:py` | `set_names`, `run`, the two kinds of failure |
+| Glue | `py/tests/test_glue.py` | `npm run test:py` | `set_names`, `run`, the two kinds of failure; the answer has the keys of `contract.ts` |
 | Units | `src/names/names.test.ts`, `src/detect/selection.test.ts` | `npm test` | Names from pasted text; click and drag selection |
 | Pairs | `test/pairs.test.ts` | `npm test` | The pairs of section 10.1 |
 | End to end | `e2e/detect.spec.ts`, `e2e/offline.spec.ts`, `e2e/network.spec.ts` | `npm run e2e` | The built site in Chromium, Firefox and WebKit, with the real Pyodide |
@@ -338,11 +340,13 @@ The same thing is written in two places. When one side changes, change the other
 ### 10.1 Checked by a test
 
 `test/pairs.test.ts` (run by `npm test`) fails when these differ. It reads the files as text, so a pair renamed or
-moved needs its line there changed too.
+moved needs its line there changed too. One pair is held by a Python test instead, because it needs a real answer
+from `detect()`: `test_the_answer_has_the_keys_contract_ts_gives_it` in `test_glue.py`.
 
 | One side | Other side |
 |---|---|
 | `detect()` arguments | `glue.run`, `DetectRequest` in `contract.ts` (a key missing from `glue.run` would be dropped silently) |
+| The keys of `detect()`'s answer, its fields and its tokens | `DetectAnswer`, `DetectField`, `DetectToken` in `contract.ts` (the Python test above) |
 | Six field colours: `.g0` to `.g5` in `detect.css` | `COLORS` in `DetectScreen.tsx` |
 | `SLOW_MS` (400) in `DetectScreen.tsx` | The 400 ms delay of the dimmed controls in `detect.css` |
 | Dark tokens under the media query | Dark tokens under `[data-theme="dark"]` (both in `theme.css`) |
@@ -361,7 +365,7 @@ Nothing checks these: a test would cost more than it saves, or the other side is
 
 | One side | Other side | If they differ |
 |---|---|---|
-| `detect()` answer | `DetectAnswer`, `DetectField` in `contract.ts` | TypeScript shows a field that is not there |
+| The kind of each value in `detect()`'s answer (text, number, list) | The types written in `contract.ts` | TypeScript treats a value as another kind than it is |
 | Syntax the engine can write | `GUIDE` in `help.tsx`, the symbol list in the README | The "i" beside *Pattern* is incomplete |
 | "0.4 s" in the README | `SLOW_MS` | The README promises another delay |
 | Tool name `ez.Regex` and its tagline | `index.html` (title, description, noscript), the header in `App.tsx`, the "newer version" messages in `PythonStatus.tsx` and `public/boot.js`, `e2e/`, the README | The page, the tests and the docs name different tools |

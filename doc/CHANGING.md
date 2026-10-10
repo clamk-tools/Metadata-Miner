@@ -111,7 +111,8 @@ An option is sent with every request (`generalize`, `anchor`). An action is sent
 ### 6.3 Something new in the answer
 
 1. `detect()`: add it to the returned dictionary, or to each entry of `out_fields`.
-2. `contract.ts`: `DetectAnswer` or `DetectField`, with a comment that says what it is.
+2. `contract.ts`: `DetectAnswer` or `DetectField`, with a comment that says what it is
+   (`test_the_answer_has_the_keys_contract_ts_gives_it` fails until both sides have it).
 3. Draw it in `src/detect/`.
 4. `test_the_answer_describes_the_sample_each_field_and_what_the_folder_gives` asserts the shape of the answer.
 

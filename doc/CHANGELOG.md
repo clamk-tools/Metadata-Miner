@@ -11,6 +11,17 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 
 ## Unreleased
 
+### 2026-10-10 · The answer's keys are checked, and one rule is written once
+
+- **Seen:** nothing changes on the page.
+- **Inside:** a Python test (`test_the_answer_has_the_keys_contract_ts_gives_it`, `test_glue.py`) reads
+  `contract.ts` and fails when the answer Python gives and the one the page expects do not have the same keys (in
+  the answer, each field and each token). This pair was kept by hand; it is now in `doc/ARCHITECTURE.md` 10.1.
+  In `engine.py`, `remap` and `widen` each had their own copy of "the tightest style that fits both names": it is
+  one function now, `_tightest`. Same behaviour, the same tests pass.
+- **Decided:** after an architecture review, the structure stays as it is: no problem found was worth a larger
+  change. The Detect screen keeps its requests and its layout in one file for now.
+
 ### 2026-10-10 · You select exactly what you want
 
 - **Seen:** a click on the sample name selects that one character, and a drag exactly the characters it covers;
