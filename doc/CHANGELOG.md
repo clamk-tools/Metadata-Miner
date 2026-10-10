@@ -13,8 +13,10 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 ### 2026-10-10 · The tool is now ez.Regex
 
 - **Seen:** the header reads **ez.Regex**, with the tagline "File name in, regex out" beside it (under it on a
-  narrow screen). The browser tab, the page description and the "newer version" messages use the new name.
-- **Inside:** `App.tsx` (header), `app.css` (`.brand-line`, `.tagline`), `index.html`, `public/boot.js`, the
+  narrow screen). The browser tab, the page description and the "newer version" messages use the new name. The
+  line under "From files to Regex" is now only "Find the regex for your metadata." ("Only file names are read."
+  is gone from there; the README's Privacy section still says it).
+- **Inside:** `App.tsx` (header), `NamesInput.tsx` (the line under the title), `app.css` (`.brand-line`, `.tagline`), `index.html`, `public/boot.js`, the
   end-to-end tests, the README and the docs. Older change log entries and the Python test headings keep the old
   name: they are history.
 - **Repository renamed** to `ez.Regex` on GitHub the same day. The site is now at

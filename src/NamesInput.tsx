@@ -18,11 +18,7 @@ export function NamesInput({ text, onText, onPaste }: Props) {
             </svg>
           </span>
         </h2>
-        <p>
-          Find the expression for your metadata.
-          <br />
-          Only file names are read.
-        </p>
+        <p>Find the regex for your metadata.</p>
       </div>
 
       <div className="section-label">
