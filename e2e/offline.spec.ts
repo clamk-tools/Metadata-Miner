@@ -62,10 +62,10 @@ test("a page opened before a release whose Python script is gone says so, and Re
   await context.route(worker, (route) => route.fulfill({ status: 404, body: "Not Found" }));
   await page.goto("./");
 
-  await expect(page.getByTestId("engine")).toContainText("A newer version of MetadataMiner was published");
+  await expect(page.getByTestId("engine")).toContainText("A newer version of ez.Regex was published");
   await page.getByLabel("Paste the names").fill(NAMES);
   await page.getByRole("button", { name: "Use these names" }).click();
-  await expect(page.getByRole("heading", { name: "A newer version of MetadataMiner was published" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "A newer version of ez.Regex was published" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0); // it could never work
 
   // WebKit also reports the missing script as an uncaught error in the page: that is the failure this test plays, and
@@ -85,7 +85,7 @@ test("a page opened before a release whose own script is gone says so, and Reloa
   await context.route(script, (route) => route.fulfill({ status: 404, body: "Not Found" }));
   await page.goto("./");
 
-  await expect(page.getByRole("alert")).toHaveText("A newer version of MetadataMiner was published. Reload the page to use it.");
+  await expect(page.getByRole("alert")).toHaveText("A newer version of ez.Regex was published. Reload the page to use it.");
 
   await context.unroute(script);
   await page.getByRole("button", { name: "Reload the page" }).click();

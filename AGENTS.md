@@ -1,6 +1,7 @@
-# Working on MetadataMiner
+# Working on ez.Regex
 
-For an LLM assistant or a new contributor. MetadataMiner is a static page (React, Vite, GitHub Pages) where the
+For an LLM assistant or a new contributor. ez.Regex (called MetadataMiner, repository `Metadata-Miner`, until
+2026-10-10) is a static page (React, Vite, GitHub Pages) where the
 user labels one microscopy file name and Python, running in the browser (Pyodide in a Web Worker), writes the
 named-group regular expression for all of them. There is no backend.
 

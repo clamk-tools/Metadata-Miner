@@ -21,7 +21,7 @@ try {
     var note = document.createElement("p");
     note.className = "notice bad";
     note.setAttribute("role", "alert");
-    note.appendChild(document.createTextNode("A newer version of MetadataMiner was published. "));
+    note.appendChild(document.createTextNode("A newer version of ez.Regex was published. "));
     var button = document.createElement("button");
     button.type = "button";
     button.className = "link";

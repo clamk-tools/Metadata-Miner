@@ -1,4 +1,6 @@
-# MetadataMiner
+# ez.Regex
+
+**File name in, regex out.**
 
 Write the metadata pattern for your microscopy image file names by labeling one of them.
 
@@ -12,9 +14,10 @@ site, the channel. It writes the regular expression that reads those parts from 
 That is a Python regular expression with named groups (CellProfiler's convention). It is what
 HC-Flow's *Load images* screen takes as its metadata pattern.
 
-**Open it:** https://clamk-tools.github.io/Metadata-Miner/
+**Open it:** https://clamk-tools.github.io/ez.Regex/
 
-The tool is one of the [Clamk Tools](https://clamk-tools.github.io/). It runs entirely in the browser.
+The tool is one of the [Clamk Tools](https://clamk-tools.github.io/). It runs entirely in the browser. It was called
+MetadataMiner until 2026-10-10, at `clamk-tools.github.io/Metadata-Miner/` (that address no longer works).
 
 ## Using it
 
@@ -169,7 +172,7 @@ npm run test:py    # Python tests: detect() and glue.py
 npm test           # TypeScript unit tests
 npm run lint
 npm run build      # type check, then build into dist/
-npm run preview    # dist/ at http://localhost:4173/Metadata-Miner/, the path it has on GitHub Pages
+npm run preview    # dist/ at http://localhost:4173/ez.Regex/, the path it has on GitHub Pages
 npm run e2e        # end-to-end tests of dist/ in three browsers (build first)
 ```
 

@@ -1,6 +1,6 @@
 # Change log
 
-What changed in MetadataMiner, newest first. One entry per change that was published or is ready to be.
+What changed in ez.Regex (called MetadataMiner until 2026-10-10), newest first. One entry per change that was published or is ready to be.
 
 The git history is not the record: the published repository may be squashed to a single commit. This file is.
 
@@ -9,6 +9,25 @@ Keep it short; the details live in the code, the tests and `doc/ARCHITECTURE.md`
 (year-month-day) and a few words. Work that is not yet on `main` goes under **Unreleased**.
 
 ## Unreleased
+
+### 2026-10-10 · The tool is now ez.Regex
+
+- **Seen:** the header reads **ez.Regex**, with the tagline "File name in, regex out" beside it (under it on a
+  narrow screen). The browser tab, the page description and the "newer version" messages use the new name. The
+  line under "From files to Regex" is now only "Find the regex for your metadata." ("Only file names are read."
+  is gone from there; the README's Privacy section still says it).
+- **Inside:** `App.tsx` (header), `NamesInput.tsx` (the line under the title), `app.css` (`.brand-line`, `.tagline`), `index.html`, `public/boot.js`, the
+  end-to-end tests, the README and the docs. The Python test headings say ez.Regex too. Older change log entries keep the
+  old name: they are history.
+- **Test fixed:** "the header links back to all the Clamk tools" opened the page a second time, which WebKit
+  sometimes reported as an error (the first page left while its worker script loaded). It now uses the page
+  opened before each test.
+- **Repository renamed** to `ez.Regex` on GitHub the same day. The site is now at
+  https://clamk-tools.github.io/ez.Regex/. The code page's old address forwards; the old site address
+  (`…/Metadata-Miner/`) does not, and shows "page not found". The footer's *Source* link, the README, the preview
+  and test address, the package name and Python's working folder in the worker follow the new name.
+- **Not done:** a forwarding page at the old site address. It would need a second repository named
+  `Metadata-Miner`, which stops GitHub forwarding the code page.
 
 ### 2026-10-09 · A page opened before a release says so
 

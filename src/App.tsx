@@ -59,18 +59,21 @@ export function App() {
     <div className="frame">
       <div className="rail" />
       <header className="wrap top">
-        <h1 className="brand">
-          {/* the brand goes to the start view: the names */}
-          <a
-            href="./"
-            onClick={(e) => {
-              e.preventDefault();
-              close();
-            }}
-          >
-            MetadataMiner
-          </a>
-        </h1>
+        <div className="brand-line">
+          <h1 className="brand">
+            {/* the brand goes to the start view: the names */}
+            <a
+              href="./"
+              onClick={(e) => {
+                e.preventDefault();
+                close();
+              }}
+            >
+              ez.Regex
+            </a>
+          </h1>
+          <p className="tagline">File name in, regex out</p>
+        </div>
         <div className="top-actions">
           <a className="quiet" href="https://clamk-tools.github.io/">
             ← All tools
@@ -98,7 +101,7 @@ export function App() {
             {engine.state === "failed" && engine.refused && `This browser cannot run Python (${engine.error}). A current browser will.`}
             {engine.state === "failed" && engine.outdated && (
               <>
-                A newer version of MetadataMiner was published.{" "}
+                A newer version of ez.Regex was published.{" "}
                 <button type="button" className="link" onClick={reload}>
                   Reload the page
                 </button>{" "}
@@ -148,7 +151,7 @@ export function App() {
 
       <footer className="wrap foot">
         <p>
-          <a className="quiet" href="https://github.com/clamk-tools/Metadata-Miner">
+          <a className="quiet" href="https://github.com/clamk-tools/ez.Regex">
             Source
           </a>
         </p>
@@ -177,7 +180,7 @@ function EngineFailed({
   if (outdated) {
     return (
       <div className="engine-failed" role="alert">
-        <h2>A newer version of MetadataMiner was published</h2>
+        <h2>A newer version of ez.Regex was published</h2>
         <p>
           This page was opened before it, and the files it needs have been replaced. Reload the page to use the new version. The paste box starts empty
           again: paste the names once more.

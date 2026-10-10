@@ -1,4 +1,4 @@
-# Changing MetadataMiner
+# Changing ez.Regex
 
 How to make a change, step by step. Written for an LLM-assisted session, and it works the same for a person.
 `doc/ARCHITECTURE.md` explains how the tool is made; read its sections 1 to 4 and 10 first.
@@ -168,7 +168,7 @@ beside them.
 
 ### 6.8 The repository name or the site's path
 
-`vite.config.ts` needs nothing (`base: "./"`). Change `/Metadata-Miner/` in the `preview` script of
+`vite.config.ts` needs nothing (`base: "./"`). Change `/ez.Regex/` in the `preview` script of
 `package.json` and twice in `playwright.config.ts`, the *Source* link in the footer (`App.tsx`), and the address
 in the README.
 

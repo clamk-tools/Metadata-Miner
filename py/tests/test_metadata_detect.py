@@ -1,7 +1,7 @@
 """Detect: learning a metadata pattern from a labeled sample file name (app/imaging/metadata_detect.py).
 
 The `detect()` tests of HC-Flow's backend/tests/test_metadata_detect.py, unchanged, then (last three sections) the
-tests of what MetadataMiner added: values that hold a separator, and two rounds of fixes. HC-Flow's endpoint tests are not here:
+tests of what ez.Regex added: values that hold a separator, and two rounds of fixes. HC-Flow's endpoint tests are not here:
 the standalone has no endpoint, and what replaces it (glue.py) is tested in test_glue.py.
 """
 import re
@@ -356,7 +356,7 @@ def test_detect_reads_only_the_names_so_a_huge_folder_is_fast():
     assert {f["name"] for f in result["fields"]} >= {"Well", "Site"} and result["matched"] == len(names)
 
 
-# ---- values that hold a separator (added in MetadataMiner, 2026-10-02) ----------------------------------------
+# ---- values that hold a separator (added in ez.Regex, 2026-10-02) ---------------------------------------------
 
 
 def _dye_names():
@@ -476,7 +476,7 @@ def test_several_words_can_be_chosen_by_hand():
     assert _fields(words)["Channel"]["pattern"] == WORDS and words["matched"] == 24
 
 
-# ---- fixed in MetadataMiner (2026-10-02) ----------------------------------------------------------------------
+# ---- fixed in ez.Regex (2026-10-02) ---------------------------------------------------------------------------
 
 
 def test_a_value_that_holds_a_superscript_digit_is_listed_like_any_other():
@@ -487,7 +487,7 @@ def test_a_value_that_holds_a_superscript_digit_is_listed_like_any_other():
     assert result["matched"] == 2 and _fields(result)["Size"]["values"] == ["x2²", "x10²"]  # 2 before 10
 
 
-# ---- fixed in MetadataMiner (2026-10-09) ----------------------------------------------------------------------
+# ---- fixed in ez.Regex (2026-10-09) ---------------------------------------------------------------------------
 
 
 def _repeating_names():
